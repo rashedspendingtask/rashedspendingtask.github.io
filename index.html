@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eat That Frog – Task Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem('etf-cache-v2')).theme}catch(e){}</script>
+<style>
+:root{--bg:#f1f5ee;--surface:#fff;--sunk:#e6ede1;--ink:#12261f;--muted:#5b6d63;--line:#d8e1d3;--lily:#2f8a55;--lime:#cdea63;--danger:#c0432c;
+--A:#c8472f;--B:#dfa021;--C:#4f9a5e;--D:#3f8aa3;--E:#98a29b;--hero:#0f3326;
+--sh:0 1px 2px rgba(18,38,31,.07),0 10px 28px -14px rgba(18,38,31,.3);
+--display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--body:"Hanken Grotesk","Segoe UI",system-ui,sans-serif}
+[data-theme=dark]{--bg:#0b1914;--surface:#132a21;--sunk:#0f2019;--ink:#e6f0dd;--muted:#97ae9f;--line:#244237;--lily:#5cc283;--hero:#164434;
+--sh:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7)}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh;padding-bottom:60px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--B);outline-offset:2px;border-radius:8px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:22px 0 16px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--hero);display:grid;place-items:center;font-size:24px}
+h1{font-family:var(--display);font-size:1.45rem;line-height:1.1}
+header p{color:var(--muted);font-size:.88rem}
+.top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip,.sync{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.86rem}
+.chip:hover,.sync:hover{border-color:var(--lily)}
+.sync{display:flex;align-items:center;gap:8px}
+.sync i{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.sync[data-s=ok] i{background:var(--C)}.sync[data-s=busy] i{background:var(--B)}.sync[data-s=err] i{background:var(--danger)}
+.sync[data-s=err]{border-color:var(--danger);color:var(--danger)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;background:var(--hero);color:#eaf6dc;border-radius:36px 36px 36px 12px;padding:30px 34px;box-shadow:var(--sh)}
+.pad{width:132px;height:132px;border-radius:50%;background:rgba(205,234,99,.14);display:grid;place-items:center;font-size:60px}
+.pad svg{width:104px}
+.pupil{transform-box:fill-box;transform-origin:center;animation:blink .5s 1.2s 1}
+@keyframes blink{50%{transform:scaleY(.1)}}
+.hero small{opacity:.8;font-size:.92rem}
+.hero h2{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.6rem);line-height:1.1;margin:4px 0 12px;letter-spacing:-.015em}
+.meta,.subs{display:flex;flex-wrap:wrap;gap:8px}
+.meta span{background:rgba(255,255,255,.14);padding:3px 11px;border-radius:99px;font-size:.84rem}
+.subs{margin-top:12px}
+.sub{background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:4px 12px;font-size:.86rem;color:inherit}
+.sub:hover{border-color:var(--lime)}.sub.on{background:rgba(205,234,99,.2);text-decoration:line-through;opacity:.75}
+.eat{background:var(--lime);color:#18300f;border:0;border-radius:16px;padding:15px 24px;font-weight:700;box-shadow:0 5px 0 #8fae2c;transition:transform .1s,box-shadow .1s}
+.eat:active{transform:translateY(4px);box-shadow:0 1px 0 #8fae2c}
+.hero.empty{background:var(--surface);color:var(--ink);border:2px dashed var(--lily)}
+.hero.empty .pad{background:var(--sunk)}
+
+/* strip */
+.strip{display:flex;gap:0;margin:20px 0;flex-wrap:wrap}
+.strip>div{padding:2px 28px 2px 0;margin-right:28px;border-right:1px solid var(--line)}
+.strip>div:last-child{border:0}
+.strip b{font-family:var(--display);font-size:1.6rem;margin-right:8px}
+.strip span{color:var(--muted);font-size:.88rem}
+.prog{min-width:220px}
+.bar{height:7px;background:var(--sunk);border-radius:9px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--lily);border-radius:9px;transition:width .5s}
+
+/* add */
+.add{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--sh);margin-bottom:22px}
+.qa{display:flex;gap:10px;flex-wrap:wrap}
+input[type=text],input[type=date],input[type=number],select{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+.qa input[type=text]{flex:1;min-width:200px;width:auto}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:3px}
+.seg label{padding:7px 14px;border-radius:9px;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--surface);color:var(--ink);box-shadow:var(--sh)}
+.seg label:has(input:focus-visible){outline:3px solid var(--B)}
+.primary{background:var(--ink);color:var(--surface);border:0;border-radius:12px;padding:10px 20px;font-weight:600}
+.primary:hover{background:var(--lily)}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:12px;padding:10px 16px}
+.ghost.danger{color:var(--danger)}
+details summary{cursor:pointer;color:var(--muted);font-size:.86rem;margin-top:10px;width:max-content}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+
+/* tabs + board */
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:14px;width:max-content;max-width:100%;overflow:auto;margin-bottom:16px}
+.tab{border:0;background:transparent;padding:8px 16px;border-radius:10px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tab[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:var(--sh)}
+.tab em{font-style:normal;background:var(--lily);color:#fff;border-radius:99px;font-size:.72rem;padding:1px 8px;margin-left:6px}
+.board{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.col{background:var(--sunk);border-radius:16px;padding:10px;min-height:220px;border:2px solid transparent;scroll-snap-align:start;transition:border-color .15s}
+.col.over{border-color:var(--lily)}
+.col h3{font-family:var(--display);font-size:1rem;display:flex;gap:9px;align-items:center;padding:4px 4px 10px}
+.col h3 small{display:block;font-family:var(--body);font-weight:400;color:var(--muted);font-size:.72rem;line-height:1.2}
+.dot{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:.85rem}
+.card{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--pc);border-radius:11px;padding:10px 12px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;cursor:grab}
+.card.dragging{opacity:.4}.card.frog{box-shadow:inset 0 0 0 1px var(--B)}
+.t{display:flex;gap:8px;align-items:flex-start}
+.name{flex:1;background:none;border:0;text-align:left;padding:0;font-size:.93rem;word-break:break-word}
+.name:hover{text-decoration:underline}
+.card.done .name{text-decoration:line-through;color:var(--muted)}
+.check{width:20px;height:20px;border-radius:7px;border:2px solid var(--lily);background:transparent;flex:none;margin-top:2px;color:#fff;font-size:.72rem;padding:0;display:grid;place-items:center}
+.card.done .check{background:var(--lily)}
+.tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.tag{font-size:.72rem;padding:2px 8px;border-radius:99px;background:var(--sunk);color:var(--muted)}
+.tag.fr{background:rgba(223,160,33,.2);color:var(--ink);font-weight:600}
+.tag.late{background:rgba(192,67,44,.15);color:var(--danger);font-weight:600}
+.mini{margin-left:auto;display:flex}
+.mini button{background:none;border:0;border-radius:8px;padding:2px 6px;opacity:.55}
+.mini button:hover{opacity:1;background:var(--sunk)}
+.note{color:var(--muted);font-size:.88rem;text-align:center;padding:22px 8px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.group{background:var(--sunk);border-radius:18px;padding:12px}
+.group h3{font-family:var(--display);font-size:1.05rem}
+.group>small{display:block;color:var(--muted);font-size:.8rem;margin-bottom:10px}
+.group .card{cursor:default}
+
+/* dialog + toast */
+dialog{margin:auto;border:0;border-radius:20px;padding:22px;width:min(640px,94vw);max-height:92vh;overflow:auto;background:var(--surface);color:var(--ink);box-shadow:0 24px 60px -10px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(8,20,15,.55)}
+dialog h2{font-family:var(--display);margin-bottom:14px}
+dialog form{display:grid;gap:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.acts{display:flex;gap:8px;justify-content:flex-end}.acts span{flex:1}
+.toggle{display:flex;gap:8px;align-items:center;font-size:.92rem}
+.toggle input{width:18px;height:18px;accent-color:var(--lily)}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+.rte{border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden}
+.rte:focus-within{border-color:var(--lily)}
+.tb{display:flex;flex-wrap:wrap;gap:2px;padding:6px;border-bottom:1px solid var(--line);background:var(--sunk);align-items:center}
+.tb button{min-width:32px;height:32px;border:0;border-radius:8px;background:transparent;padding:0 7px;font-size:.88rem}
+.tb button:hover{background:var(--line)}.tb button[aria-pressed=true]{background:var(--lily);color:#fff}
+.tb input[type=color]{width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer}
+.tb .sep{width:1px;height:20px;background:var(--line);margin:0 5px}
+#eNotes{min-height:150px;max-height:300px;overflow:auto;padding:10px 12px;outline:none;font-size:.93rem;color:var(--ink);line-height:1.55}
+#eNotes:empty:before{content:attr(data-ph);color:var(--muted)}
+#eNotes ul,#eNotes ol,.notes ul,.notes ol{padding-left:1.4em;margin:4px 0}
+.notes{font-size:.86rem;padding:8px 10px;background:var(--sunk);border-radius:8px;word-break:break-word}
+button.tag{border:0;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:.3s;z-index:20;display:flex;gap:14px;align-items:center}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{background:none;border:0;font-weight:700;color:var(--lime);padding:0}
+.splash{position:fixed;inset:0;pointer-events:none;z-index:15;overflow:hidden}
+.splash i{position:absolute;top:-30px;font-style:normal;font-size:28px;animation:fall 1.8s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+footer{margin-top:36px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;color:var(--muted);font-size:.86rem}
+footer b{color:var(--ink);display:block}
+
+@media(max-width:900px){
+ .hero{grid-template-columns:1fr;border-radius:28px;padding:24px}.pad{width:92px;height:92px}.pad svg{width:72px}.eat{justify-self:start}
+ .opts{grid-template-columns:1fr 1fr}.board{grid-template-columns:repeat(5,78%)}
+ .strip>div{border:0;margin-right:0;padding-right:24px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo" aria-hidden="true">🐸</div><div><h1>Eat That Frog</h1><p id="today"></p></div></div>
+    <div class="top">
+      <button class="sync" id="sync" data-s="busy" title="Save and sync now"><i></i><span id="syncTxt">Connecting…</span></button>
+      <button class="chip" id="clearDone">Clear done</button>
+      <button class="chip" id="theme">Dark mode</button>
+    </div>
+  </header>
+
+  <section class="hero empty" id="hero" aria-live="polite"></section>
+
+  <section class="strip" aria-label="Progress">
+    <div class="prog"><b id="sDone">0/0</b><span>done today</span><div class="bar"><i id="sBar"></i></div></div>
+    <div><b id="sFrogs">0</b><span>frogs eaten</span></div>
+    <div><b id="sPending">0</b><span>pending</span></div>
+    <div><b id="sMins">0m</b><span>effort left</span></div>
+  </section>
+
+  <form class="add" id="form" autocomplete="off">
+    <div class="qa">
+      <input type="text" id="title" placeholder="What needs doing?" required maxlength="120" aria-label="Task name">
+      <div class="seg"><label><input type="radio" name="kind" value="task" checked>Task</label><label><input type="radio" name="kind" value="frog">Frog</label></div>
+      <button class="primary" type="submit">Add task</button>
+    </div>
+    <details><summary>More options</summary>
+      <div class="opts">
+        <label class="f">Priority<select id="prio"></select></label>
+        <label class="f">Due date<input type="date" id="due"></label>
+        <label class="f">Minutes<input type="number" id="mins" min="5" step="5" value="30"></label>
+        <label class="f">Belongs to frog<select id="frogId"></select></label>
+      </div>
+    </details>
+  </form>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="board">Priority board</button>
+    <button class="tab" role="tab" data-view="pending">Pending by frog <em id="cPending">0</em></button>
+    <button class="tab" role="tab" data-view="done">Completed <em id="cDone">0</em></button>
+  </div>
+  <main id="view"></main>
+
+  <footer>
+    <div><b>Eat the frog first.</b>Do your hardest task before anything else.</div>
+    <div><b>One frog at a time.</b>With two, start with the uglier one.</div>
+    <div><b>Sort A to E.</b>Drag cards between columns, or open one to change its priority.</div>
+    <div><b>Pending carries over.</b>Unfinished frogs stay visible until eaten.</div>
+  </footer>
+</div>
+
+<dialog id="dlg">
+  <form id="edit">
+    <h2>Edit task</h2>
+    <label class="f">Name<input type="text" id="eTitle" required maxlength="120"></label>
+    <div class="fld">Details
+      <div class="rte">
+        <div class="tb" id="tb" role="toolbar" aria-label="Text formatting">
+          <button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button type="button" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <button type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+          <button type="button" data-cmd="subscript" title="Subscript">x₂</button>
+          <button type="button" data-cmd="superscript" title="Superscript">x²</button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+          <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <span class="sep"></span>
+          <button type="button" id="hlBtn" title="Highlight selection">Highlight</button><input type="color" id="hlCol" value="#ffe566" title="Pick highlight colour" aria-label="Highlight colour">
+          <button type="button" id="fcBtn" title="Colour selected text"><b>A</b></button><input type="color" id="fcCol" value="#c8472f" title="Pick text colour" aria-label="Text colour">
+          <span class="sep"></span>
+          <button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+        </div>
+        <div id="eNotes" contenteditable="true" data-ph="Add notes, steps or context for this task…" role="textbox" aria-multiline="true" aria-label="Task details"></div>
+      </div>
+    </div>
+    <div class="g2">
+      <label class="f">Priority<select id="ePrio"></select></label>
+      <label class="f">Due date<input type="date" id="eDue"></label>
+      <label class="f">Minutes<input type="number" id="eMins" min="5" step="5"></label>
+      <label class="f">Belongs to frog<select id="eFrogId"></select></label>
+    </div>
+    <label class="toggle"><input type="checkbox" id="eFrog"> This is a frog</label>
+    <div class="acts"><button type="button" class="ghost danger" id="eDel">Delete</button><span></span><button type="button" class="ghost" id="eCancel">Cancel</button><button class="primary">Save changes</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  /* ===== JSONBin settings =====
+     The Master Key is visible to anyone who opens this page. For a public site, create an
+     Access Key in JSONBin limited to Read + Update on this bin, and paste it here instead. */
+  const CFG = {
+    BIN_ID: '6ad058e7ffd5d160536c555f',
+    KEY: '$2a$10$/hp/j.v4UL3IFb7fXpjwzulDpeP9J.Lp.SSCewr.DIx/3RWokv.t2',
+    API: 'https://api.jsonbin.io/v3/b/',
+    DELAY: 900,            // wait after the last change before saving (ms)
+    CACHE: 'etf-cache-v2'  // offline copy in this browser
+  };
+  const PR = {A:['Must do','Serious consequences if skipped'],B:['Should do','Mild consequences'],C:['Nice to do','No consequences'],D:['Delegate','Someone else can do it'],E:['Eliminate','Drop it']};
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pad = n => String(n).padStart(2,'0');
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+  const late = s => { const [a,b,c] = today().split('-'), [x,y,z] = s.split('-'); return Math.round((new Date(a,b-1,c) - new Date(x,y-1,z)) / 864e5); };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const dueKey = t => t.due || '9999';
+
+  const shown = new Set();
+  let state = null, ready = false, view = 'board', dirty = false, saving = false, tm, rt, lastPull = 0;
+
+  /* ===== data ===== */
+  function norm(r){
+    if(!r || !Array.isArray(r.tasks)) return null;
+    const ids = new Set(r.tasks.map(t => String(t.id)));
+    return {theme: r.theme === 'dark' ? 'dark' : 'light', tasks: r.tasks.map(t => ({
+      id:String(t.id), title:String(t.title || 'Untitled'), prio:PR[t.prio] ? t.prio : 'C', due:t.due || '', mins:+t.mins || 30,
+      isFrog:!!t.isFrog, frogId:t.frogId != null && ids.has(String(t.frogId)) ? String(t.frogId) : null,
+      notes:clean(t.notes), done:!!t.done, doneAt:t.doneAt || null, created:t.created || today()}))};
+  }
+  const OKT = new Set(['B','STRONG','I','EM','U','S','STRIKE','SUB','SUP','UL','OL','LI','BR','P','DIV','SPAN','MARK','FONT']);
+  const COL = /^(#[0-9a-f]{3,8}|rgba?\([\d\s,.%]+\)|[a-z]+)$/i;
+  function clean(html){  /* keeps only safe formatting tags and colours */
+    if(!html) return '';
+    const body = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html').body;
+    (function walk(n){
+      [...n.childNodes].forEach(c => {
+        if(c.nodeType === 3) return;
+        if(c.nodeType !== 1 || /^(SCRIPT|STYLE)$/.test(c.tagName)) return c.remove();
+        walk(c);
+        if(!OKT.has(c.tagName)) return c.replaceWith(...c.childNodes);
+        const fg = c.style.color || c.getAttribute('color') || '', bg = c.style.backgroundColor || '';
+        [...c.attributes].forEach(a => c.removeAttribute(a.name));
+        if(COL.test(fg)) c.style.color = fg;
+        if(COL.test(bg)) c.style.backgroundColor = bg;
+      });
+    })(body);
+    return body.innerHTML;
+  }
+  const hasN = t => !!(t.notes && t.notes.replace(/<[^>]*>|&nbsp;|\s/g, ''));
+  const seed = () => { const d = today(); return norm({tasks:[
+    {id:'s1',title:'Write the project proposal',prio:'A',due:d,mins:90,isFrog:true},
+    {id:'s2',title:'Outline the three key sections',prio:'A',due:d,mins:25,frogId:'s1'},
+    {id:'s3',title:'Collect last quarter numbers',prio:'B',due:d,mins:20,frogId:'s1'},
+    {id:'s4',title:'Reply to non-urgent emails',prio:'C',mins:20}]}); };
+  const cache = () => { try{ localStorage.setItem(CFG.CACHE, JSON.stringify(state)); }catch(e){} };
+  const byId = id => state.tasks.find(t => t.id === id);
+  const pendingFrogs = () => state.tasks.filter(t => t.isFrog && !t.done);
+  const pending = () => state.tasks.filter(t => !t.done);
+
+  /* ===== JSONBin sync ===== */
+  async function api(method, body){
+    const r = await fetch(CFG.API + CFG.BIN_ID + (method === 'GET' ? '/latest' : ''), {
+      method, headers:{'X-Master-Key':CFG.KEY, 'X-Bin-Meta':'false', ...(body ? {'Content-Type':'application/json'} : {})},
+      body: body ? JSON.stringify(body) : undefined});
+    if(!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'Key rejected by JSONBin' : r.status === 404 ? 'Bin not found' : r.status === 429 ? 'Rate limit reached' : 'JSONBin error ' + r.status);
+    return r.json();
+  }
+  function setSync(s, text){ $('sync').dataset.s = s; $('syncTxt').textContent = text; }
+  async function pull(first){
+    if(dirty || saving) return;
+    try{
+      if(first) setSync('busy','Connecting…');
+      const r = norm(await api('GET'));
+      if(dirty || saving) return;
+      lastPull = Date.now();
+      if(!r){ state = seed(); ready = true; commit(); return; }
+      const changed = state && JSON.stringify(r) !== JSON.stringify(state);
+      state = r; ready = true; cache(); render(); setSync('ok','Saved to JSONBin');
+      if(changed && !first) toast('Board updated from another device');
+    }catch(e){ setSync('err', e.message + ' · Retry'); if(!ready) render(); }
+  }
+  async function flush(){
+    clearTimeout(tm); clearTimeout(rt);
+    if(saving || !dirty) return;
+    saving = true; dirty = false; setSync('busy','Saving…');
+    let ok = true;
+    try{ await api('PUT', state); }
+    catch(e){ ok = false; dirty = true; setSync('err', e.message + ' · Retry'); rt = setTimeout(flush, 15000); }
+    saving = false;
+    if(ok){ if(dirty) flush(); else setSync('ok','Saved to JSONBin'); }
+  }
+  function commit(){ cache(); dirty = true; setSync('busy','Unsaved changes'); clearTimeout(tm); tm = setTimeout(flush, CFG.DELAY); render(); }
+
+  /* ===== ui helpers ===== */
+  function toast(msg, act){
+    const t = $('toast'); t.textContent = msg;
+    if(act){ const b = document.createElement('button'); b.textContent = act.label; b.onclick = () => { act.fn(); t.classList.remove('show'); }; t.appendChild(b); }
+    t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), act ? 5000 : 2200);
+  }
+  function splash(){
+    const s = document.createElement('div'); s.className = 'splash';
+    for(let i = 0; i < 26; i++){ const e = document.createElement('i'); e.textContent = ['🐸','✨','🪷'][i % 3]; e.style.left = Math.random()*100 + '%'; e.style.animationDelay = Math.random()*.6 + 's'; s.appendChild(e); }
+    document.body.appendChild(s); setTimeout(() => s.remove(), 2600);
+  }
+  const FROG = `<svg viewBox="0 0 160 130" aria-hidden="true"><ellipse cx="80" cy="86" rx="62" ry="40" fill="#5cb870"/><ellipse cx="80" cy="102" rx="38" ry="18" fill="#a5dc9c" opacity=".5"/><circle cx="46" cy="44" r="22" fill="#5cb870"/><circle cx="114" cy="44" r="22" fill="#5cb870"/><circle cx="46" cy="44" r="14" fill="#fff"/><circle cx="114" cy="44" r="14" fill="#fff"/><circle class="pupil" cx="48" cy="46" r="7" fill="#0f2a22"/><circle class="pupil" cx="112" cy="46" r="7" fill="#0f2a22"/><path d="M44 88Q80 114 116 88" stroke="#0f2a22" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="34" cy="92" r="7" fill="#f2a6a0" opacity=".6"/><circle cx="126" cy="92" r="7" fill="#f2a6a0" opacity=".6"/></svg>`;
+
+  /* ===== render ===== */
+  function frogOfDay(){ return pendingFrogs().sort((a,b) => dueKey(a).localeCompare(dueKey(b)) || a.prio.localeCompare(b.prio))[0]; }
+  function renderHero(){
+    const h = $('hero'), f = frogOfDay();
+    if(!f){
+      h.className = 'hero empty';
+      h.innerHTML = '<div class="pad">🪷</div><div><small>No frog on your pad</small><h2>Pick the one task that matters most today.</h2><div class="meta"><span>Add a task and choose "Frog"</span></div></div><span></span>';
+      return;
+    }
+    h.className = 'hero';
+    const kids = state.tasks.filter(t => t.frogId === f.id), left = kids.filter(k => !k.done).length, l = f.due && late(f.due);
+    h.innerHTML = `<div class="pad">${FROG}</div><div><small>Today's frog. Eat it first.</small><h2>${esc(f.title)}</h2>
+      <div class="meta"><span>Priority ${f.prio}</span><span>${f.mins} min</span>${f.due ? `<span>${l > 0 ? 'Overdue ' + l + ' d' : 'Due ' + f.due}</span>` : ''}${kids.length ? `<span>${kids.length - left}/${kids.length} sub-tasks done</span>` : ''}</div>
+      ${kids.length ? `<div class="subs">${kids.map(k => `<button class="sub ${k.done ? 'on' : ''}" data-id="${k.id}">${esc(k.title)}</button>`).join('')}</div>` : ''}</div>
+      <button class="eat" data-id="${f.id}">Eat this frog</button>`;
+  }
+  function card(t, drag = true){
+    const fr = t.frogId && byId(t.frogId), l = !t.done && t.due && late(t.due);
+    return `<div class="card ${t.isFrog ? 'frog' : ''} ${t.done ? 'done' : ''}" draggable="${drag}" data-id="${t.id}" style="--pc:var(--${t.prio})">
+      <div class="t"><button class="check" data-act="toggle" aria-label="${t.done ? 'Mark not done' : 'Mark done'}">${t.done ? '✓' : ''}</button><button class="name" data-act="edit">${esc(t.title)}</button></div>
+      <div class="tags">${t.isFrog ? '<span class="tag fr">🐸 Frog</span>' : ''}${fr ? `<span class="tag fr">🐸 ${esc(fr.title)}</span>` : ''}${hasN(t) ? `<button class="tag fr" data-act="notes" aria-expanded="${shown.has(t.id)}">📝 Notes</button>` : ''}<span class="tag">${t.mins}m</span>
+      ${t.due ? `<span class="tag ${l > 0 ? 'late' : ''}">${l > 0 ? 'Carried over ' + l + 'd' : t.due}</span>` : ''}
+      <span class="mini"><button data-act="frog" title="${t.isFrog ? 'Unmark as frog' : 'Make this a frog'}" aria-label="Toggle frog">🐸</button><button data-act="del" title="Delete" aria-label="Delete task">🗑</button></span></div>${hasN(t) && shown.has(t.id) ? `<div class="notes">${t.notes}</div>` : ''}</div>`;
+  }
+  function renderView(){
+    const m = $('view');
+    if(!ready){
+      m.innerHTML = $('sync').dataset.s === 'err'
+        ? '<div class="note">Could not load your board from JSONBin.<br><br><button class="primary" id="retry">Try again</button></div>'
+        : '<div class="note">Loading your board…</div>';
+      return;
+    }
+    if(view === 'board'){
+      m.innerHTML = '<div class="board">' + Object.keys(PR).map(p => {
+        const items = state.tasks.filter(t => t.prio === p && !t.done).sort((a,b) => (b.isFrog - a.isFrog) || dueKey(a).localeCompare(dueKey(b)));
+        return `<div class="col" data-prio="${p}"><h3><span class="dot" style="background:var(--${p})">${p}</span><span>${PR[p][0]}<small>${PR[p][1]}</small></span></h3>${items.map(t => card(t)).join('') || '<div class="note">Drop tasks here</div>'}</div>`;
+      }).join('') + '</div>';
+      bindDnD();
+    } else if(view === 'pending'){
+      let html = '';
+      pendingFrogs().sort((a,b) => dueKey(a).localeCompare(dueKey(b))).forEach(f => {
+        const kids = state.tasks.filter(t => t.frogId === f.id && !t.done), mins = kids.reduce((s,k) => s + k.mins, f.mins);
+        html += `<section class="group"><h3>🐸 ${esc(f.title)}</h3><small>${kids.length + 1} pending · ${mins} min total</small>${card(f,false)}${kids.map(k => card(k,false)).join('')}</section>`;
+      });
+      const loose = state.tasks.filter(t => !t.done && !t.isFrog && !(t.frogId && byId(t.frogId) && !byId(t.frogId).done));
+      if(loose.length) html += `<section class="group"><h3>No frog attached</h3><small>${loose.length} pending</small>${loose.map(k => card(k,false)).join('')}</section>`;
+      m.innerHTML = html ? `<div class="list">${html}</div>` : '<div class="note">Nothing pending. The pond is calm. 🪷</div>';
+    } else {
+      const items = state.tasks.filter(t => t.done).sort((a,b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+      m.innerHTML = items.length ? `<div class="list">${items.map(t => card(t,false)).join('')}</div>` : '<div class="note">Completed tasks will appear here.</div>';
+    }
+  }
+  function renderStats(){
+    const d = today(), done = state.tasks.filter(x => x.done && x.doneAt === d).length, total = done + state.tasks.filter(x => !x.done && (!x.due || x.due <= d)).length;
+    $('sDone').textContent = done + '/' + total; $('sBar').style.width = (total ? done / total * 100 : 0) + '%';
+    $('sFrogs').textContent = state.tasks.filter(t => t.isFrog && t.done).length;
+    $('sPending').textContent = pending().length;
+    const m = pending().reduce((s,x) => s + x.mins, 0);
+    $('sMins').textContent = m >= 60 ? (m / 60).toFixed(1).replace('.0','') + 'h' : m + 'm';
+    $('cPending').textContent = pending().length; $('cDone').textContent = state.tasks.filter(x => x.done).length;
+  }
+  function frogOptions(sel, skip, cur){
+    sel.innerHTML = '<option value="">No frog</option>' + pendingFrogs().filter(f => f.id !== skip).map(f => `<option value="${f.id}">🐸 ${esc(f.title)}</option>`).join('');
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : '';
+  }
+  function render(){
+    document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.view === view));
+    if(state){
+      document.documentElement.dataset.theme = state.theme;
+      $('theme').textContent = state.theme === 'dark' ? 'Light mode' : 'Dark mode';
+    }
+    if(ready){ renderHero(); renderStats(); frogOptions($('frogId'), null, $('frogId').value); }
+    renderView();
+  }
+
+  /* ===== actions ===== */
+  function complete(id, celebrate){
+    const t = byId(id); if(!t) return;
+    t.done = !t.done; t.doneAt = t.done ? today() : null;
+    if(t.done && t.isFrog && celebrate){ splash(); toast('Frog eaten! The rest of the day is easy.'); }
+    else if(t.done) toast('Task completed');
+    commit();
+  }
+  function del(id){
+    const i = state.tasks.findIndex(x => x.id === id), t = state.tasks[i];
+    const kids = state.tasks.filter(x => x.frogId === id).map(x => x.id);
+    kids.forEach(k => byId(k).frogId = null); state.tasks.splice(i, 1); commit();
+    toast('Task deleted', {label:'Undo', fn:() => { state.tasks.splice(i, 0, t); kids.forEach(k => { const x = byId(k); if(x) x.frogId = id; }); commit(); }});
+  }
+  function bindDnD(){
+    let dragId = null;
+    document.querySelectorAll('.card').forEach(c => {
+      c.addEventListener('dragstart', e => { dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); });
+      c.addEventListener('dragend', () => c.classList.remove('dragging'));
+    });
+    document.querySelectorAll('.col').forEach(col => {
+      col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('over'); });
+      col.addEventListener('dragleave', () => col.classList.remove('over'));
+      col.addEventListener('drop', e => {
+        e.preventDefault(); col.classList.remove('over');
+        const t = byId(dragId); if(!t || t.prio === col.dataset.prio) return;
+        t.prio = col.dataset.prio; if(t.prio === 'E') toast('Moved to Eliminate. Do you really need it?'); commit();
+      });
+    });
+  }
+  let editId = null;
+  function openEdit(id){
+    const t = byId(id); if(!t) return; editId = id;
+    $('eTitle').value = t.title; $('eNotes').innerHTML = t.notes || ''; rng = null; $('ePrio').value = t.prio; $('eDue').value = t.due; $('eMins').value = t.mins; $('eFrog').checked = t.isFrog;
+    frogOptions($('eFrogId'), id, t.frogId); $('eFrogId').disabled = t.isFrog; $('dlg').showModal();
+  }
+
+  /* ===== events ===== */
+  document.addEventListener('click', e => {
+    if(e.target.id === 'retry') return pull(true);
+    const eat = e.target.closest('.eat'); if(eat) return complete(eat.dataset.id, true);
+    const sub = e.target.closest('.sub'); if(sub) return complete(sub.dataset.id, true);
+    const b = e.target.closest('#view button[data-act]'); if(!b) return;
+    const id = b.closest('.card').dataset.id, t = byId(id);
+    if(b.dataset.act === 'toggle') complete(id, true);
+    if(b.dataset.act === 'edit') openEdit(id);
+    if(b.dataset.act === 'del') del(id);
+    if(b.dataset.act === 'notes'){ shown.has(id) ? shown.delete(id) : shown.add(id); render(); }
+    if(b.dataset.act === 'frog'){ t.isFrog = !t.isFrog; if(t.isFrog) t.frogId = null; else state.tasks.forEach(x => { if(x.frogId === id) x.frogId = null; }); commit(); }
+  });
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
+  $('form').addEventListener('submit', e => {
+    e.preventDefault(); if(!ready) return toast('Still connecting to JSONBin');
+    const title = $('title').value.trim(); if(!title) return;
+    const isFrog = document.querySelector('input[name=kind]:checked').value === 'frog';
+    state.tasks.push({id:uid(), title, prio:isFrog ? 'A' : $('prio').value, due:$('due').value, mins:Math.max(5, +$('mins').value || 30), isFrog,
+      frogId:isFrog || !$('frogId').value ? null : $('frogId').value, done:false, doneAt:null, created:today()});
+    $('title').value = ''; $('mins').value = 30; $('prio').value = 'C'; document.querySelector('input[name=kind][value=task]').checked = true;
+    toast(isFrog ? 'New frog added. Eat it first!' : 'Task added'); commit(); $('title').focus();
+  });
+  $('edit').addEventListener('submit', e => {
+    e.preventDefault(); const t = byId(editId); if(!t) return;
+    t.title = $('eTitle').value.trim() || t.title; t.notes = clean($('eNotes').innerHTML); if(!hasN(t)) t.notes = ''; t.prio = $('ePrio').value; t.due = $('eDue').value; t.mins = Math.max(5, +$('eMins').value || 30);
+    t.isFrog = $('eFrog').checked; t.frogId = t.isFrog || !$('eFrogId').value ? null : $('eFrogId').value;
+    if(!t.isFrog) {} else state.tasks.forEach(x => { if(x.frogId === t.id && false) x.frogId = null; });
+    $('dlg').close(); toast('Changes saved'); commit();
+  });
+  $('eFrog').onchange = e => { $('eFrogId').disabled = e.target.checked; };
+  $('eCancel').onclick = () => $('dlg').close();
+  $('eDel').onclick = () => { $('dlg').close(); del(editId); };
+  $('sync').onclick = () => { if(dirty) flush(); else pull(true); };
+  $('clearDone').onclick = () => { if(!ready) return; state.tasks = state.tasks.filter(t => !t.done); state.tasks.forEach(t => { if(t.frogId && !byId(t.frogId)) t.frogId = null; }); toast('Completed tasks cleared'); commit(); };
+  $('theme').onclick = () => { if(!ready) return; state.theme = state.theme === 'dark' ? 'light' : 'dark'; commit(); };
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) flush(); else if(Date.now() - lastPull > 30000) pull(false);
+  });
+  window.addEventListener('online', () => dirty ? flush() : pull(false));
+  window.addEventListener('beforeunload', e => { if(dirty || saving){ e.preventDefault(); e.returnValue = ''; } });
+
+  /* ===== rich text editor ===== */
+  const ed = $('eNotes'); let rng = null;
+  const pressed = () => document.querySelectorAll('#tb [data-cmd]').forEach(b => { try{ b.setAttribute('aria-pressed', document.queryCommandState(b.dataset.cmd)); }catch(e){} });
+  const exec = (c, v) => { ed.focus(); document.execCommand('styleWithCSS', false, true); document.execCommand(c, false, v); pressed(); };
+  const restore = () => { ed.focus(); if(rng){ const s = getSelection(); s.removeAllRanges(); s.addRange(rng); } };
+  ed.addEventListener('blur', () => { const s = getSelection(); if(s.rangeCount && ed.contains(s.anchorNode)) rng = s.getRangeAt(0).cloneRange(); });
+  ed.addEventListener('keyup', pressed); ed.addEventListener('mouseup', pressed);
+  ed.addEventListener('input', () => { if(!ed.textContent.trim() && !ed.querySelector('li')) ed.innerHTML = ''; });
+  ed.addEventListener('paste', e => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); });
+  $('tb').addEventListener('mousedown', e => { if(e.target.closest('button')) e.preventDefault(); });
+  $('tb').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    if(b.dataset.cmd) exec(b.dataset.cmd);
+    if(b.id === 'hlBtn') exec('hiliteColor', $('hlCol').value);
+    if(b.id === 'fcBtn') exec('foreColor', $('fcCol').value);
+  });
+  $('hlCol').addEventListener('input', e => { restore(); exec('hiliteColor', e.target.value); });
+  $('fcCol').addEventListener('input', e => { restore(); exec('foreColor', e.target.value); });
+
+  /* ===== start ===== */
+  const opts = Object.keys(PR).map(p => `<option value="${p}">${p} – ${PR[p][0]}</option>`).join('');
+  $('prio').innerHTML = opts; $('ePrio').innerHTML = opts; $('prio').value = 'C';
+  $('today').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  $('due').value = today();
+  try{ const c = norm(JSON.parse(localStorage.getItem(CFG.CACHE))); if(c){ state = c; ready = true; } }catch(e){}
+  render(); pull(true);
+})();
+</script>
+</body>
+</html>

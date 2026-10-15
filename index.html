@@ -134,6 +134,36 @@ dialog form{display:grid;gap:12px}
 #eNotes ul,#eNotes ol,.notes ul,.notes ol{padding-left:1.4em;margin:4px 0}
 .notes{font-size:.86rem;padding:8px 10px;background:var(--sunk);border-radius:8px;word-break:break-word}
 button.tag{border:0;cursor:pointer}
+.calwrap{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:18px;align-items:start}
+.calbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.calbar h3{font-family:var(--display);font-size:1.25rem;flex:1}
+.calbar small{display:block;font-family:var(--body);font-weight:400;font-size:.78rem;color:var(--muted)}
+.calbar .chip{min-width:40px}
+.wk,.cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wk span{text-align:center;font-size:.76rem;color:var(--muted);padding:4px 0}
+.day{min-height:100px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:3px;text-align:left;overflow:hidden}
+.day:hover{border-color:var(--lily)}.day.dim{opacity:.45}
+.day.sel{border:2px solid var(--lily);box-shadow:var(--sh)}
+.dn{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.day.today .dn{background:var(--lily);color:#fff}
+.ch{font-style:normal;font-size:.7rem;border-left:3px solid var(--pc);background:var(--sunk);padding:1px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch.fin{text-decoration:line-through;opacity:.55}
+.more{font-style:normal;font-size:.68rem;color:var(--muted)}
+.cnt{margin-top:auto;display:flex;gap:4px}
+.cnt b{font-size:.68rem;border-radius:99px;padding:0 7px;color:#fff}
+.cnt .o{background:var(--B)}.cnt .g{background:var(--C)}
+.dayp{background:var(--sunk);border-radius:18px;padding:16px;position:sticky;top:12px}
+.dayp h3{font-family:var(--display);font-size:1.1rem}
+.dayp h4{font-size:.82rem;color:var(--muted);margin:14px 0 6px}
+.dayp .bar{background:var(--line)}
+.dsub{color:var(--muted);font-size:.86rem}
+.dayadd{display:flex;gap:8px;align-items:center;margin:12px 0 2px;flex-wrap:wrap}
+.dayadd input[type=text]{flex:1;min-width:140px;width:auto}
+#vdlg{padding:0}.vbox{padding:22px;display:grid;gap:14px}
+#vdlg h2{margin:0;word-break:break-word}
+.vm{display:flex;gap:6px;flex-wrap:wrap}.vm .tag{font-size:.8rem;padding:3px 10px}
+#vNotes{font-size:.96rem;line-height:1.6;max-height:50vh;overflow:auto;padding:12px 14px;border-radius:12px}
+@media(max-width:900px){.calwrap{grid-template-columns:1fr}.day{min-height:60px}.ch,.more{display:none}.dayp{position:static}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--surface);padding:11px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:.3s;z-index:20;display:flex;gap:14px;align-items:center}
 .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .toast button{background:none;border:0;font-weight:700;color:var(--lime);padding:0}
@@ -189,6 +219,7 @@ footer b{color:var(--ink);display:block}
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-view="board">Priority board</button>
+    <button class="tab" role="tab" data-view="cal">Calendar</button>
     <button class="tab" role="tab" data-view="pending">Pending by frog <em id="cPending">0</em></button>
     <button class="tab" role="tab" data-view="done">Completed <em id="cDone">0</em></button>
   </div>
@@ -237,6 +268,14 @@ footer b{color:var(--ink);display:block}
     <div class="acts"><button type="button" class="ghost danger" id="eDel">Delete</button><span></span><button type="button" class="ghost" id="eCancel">Cancel</button><button class="primary">Save changes</button></div>
   </form>
 </dialog>
+<dialog id="vdlg" aria-labelledby="vTitle">
+  <div class="vbox">
+    <h2 id="vTitle"></h2>
+    <div class="vm" id="vMeta"></div>
+    <div class="notes" id="vNotes"></div>
+    <div class="acts"><button type="button" class="ghost" id="vClose">Close</button><span></span><button type="button" class="ghost" id="vDone"></button><button type="button" class="primary" id="vEdit">Edit</button></div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -260,7 +299,6 @@ footer b{color:var(--ink);display:block}
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   const dueKey = t => t.due || '9999';
 
-  const shown = new Set();
   let state = null, ready = false, view = 'board', dirty = false, saving = false, tm, rt, lastPull = 0;
 
   /* ===== data ===== */
@@ -360,7 +398,7 @@ footer b{color:var(--ink);display:block}
     }
     h.className = 'hero';
     const kids = state.tasks.filter(t => t.frogId === f.id), left = kids.filter(k => !k.done).length, l = f.due && late(f.due);
-    h.innerHTML = `<div class="pad">${FROG}</div><div><small>Today's frog. Eat it first.</small><h2>${esc(f.title)}</h2>
+    h.innerHTML = `<div class="pad">${FROG}</div><div><small>Today's frog. Eat it first.</small><h2 data-open="${f.id}" style="cursor:pointer" title="View details">${esc(f.title)}</h2>
       <div class="meta"><span>Priority ${f.prio}</span><span>${f.mins} min</span>${f.due ? `<span>${l > 0 ? 'Overdue ' + l + ' d' : 'Due ' + f.due}</span>` : ''}${kids.length ? `<span>${kids.length - left}/${kids.length} sub-tasks done</span>` : ''}</div>
       ${kids.length ? `<div class="subs">${kids.map(k => `<button class="sub ${k.done ? 'on' : ''}" data-id="${k.id}">${esc(k.title)}</button>`).join('')}</div>` : ''}</div>
       <button class="eat" data-id="${f.id}">Eat this frog</button>`;
@@ -368,10 +406,10 @@ footer b{color:var(--ink);display:block}
   function card(t, drag = true){
     const fr = t.frogId && byId(t.frogId), l = !t.done && t.due && late(t.due);
     return `<div class="card ${t.isFrog ? 'frog' : ''} ${t.done ? 'done' : ''}" draggable="${drag}" data-id="${t.id}" style="--pc:var(--${t.prio})">
-      <div class="t"><button class="check" data-act="toggle" aria-label="${t.done ? 'Mark not done' : 'Mark done'}">${t.done ? '✓' : ''}</button><button class="name" data-act="edit">${esc(t.title)}</button></div>
-      <div class="tags">${t.isFrog ? '<span class="tag fr">🐸 Frog</span>' : ''}${fr ? `<span class="tag fr">🐸 ${esc(fr.title)}</span>` : ''}${hasN(t) ? `<button class="tag fr" data-act="notes" aria-expanded="${shown.has(t.id)}">📝 Notes</button>` : ''}<span class="tag">${t.mins}m</span>
+      <div class="t"><button class="check" data-act="toggle" aria-label="${t.done ? 'Mark not done' : 'Mark done'}">${t.done ? '✓' : ''}</button><button class="name" data-act="view" title="Open task">${esc(t.title)}</button></div>
+      <div class="tags">${t.isFrog ? '<span class="tag fr">🐸 Frog</span>' : ''}${fr ? `<span class="tag fr">🐸 ${esc(fr.title)}</span>` : ''}${hasN(t) ? '<span class="tag" title="Has details">📝</span>' : ''}<span class="tag">${t.mins}m</span>
       ${t.due ? `<span class="tag ${l > 0 ? 'late' : ''}">${l > 0 ? 'Carried over ' + l + 'd' : t.due}</span>` : ''}
-      <span class="mini"><button data-act="frog" title="${t.isFrog ? 'Unmark as frog' : 'Make this a frog'}" aria-label="Toggle frog">🐸</button><button data-act="del" title="Delete" aria-label="Delete task">🗑</button></span></div>${hasN(t) && shown.has(t.id) ? `<div class="notes">${t.notes}</div>` : ''}</div>`;
+      <span class="mini"><button data-act="edit" title="Edit" aria-label="Edit task">✎</button><button data-act="frog" title="${t.isFrog ? 'Unmark as frog' : 'Make this a frog'}" aria-label="Toggle frog">🐸</button><button data-act="del" title="Delete" aria-label="Delete task">🗑</button></span></div></div>`;
   }
   function renderView(){
     const m = $('view');
@@ -387,6 +425,8 @@ footer b{color:var(--ink);display:block}
         return `<div class="col" data-prio="${p}"><h3><span class="dot" style="background:var(--${p})">${p}</span><span>${PR[p][0]}<small>${PR[p][1]}</small></span></h3>${items.map(t => card(t)).join('') || '<div class="note">Drop tasks here</div>'}</div>`;
       }).join('') + '</div>';
       bindDnD();
+    } else if(view === 'cal'){
+      m.innerHTML = calHTML();
     } else if(view === 'pending'){
       let html = '';
       pendingFrogs().sort((a,b) => dueKey(a).localeCompare(dueKey(b))).forEach(f => {
@@ -466,12 +506,21 @@ footer b{color:var(--ink);display:block}
     if(e.target.id === 'retry') return pull(true);
     const eat = e.target.closest('.eat'); if(eat) return complete(eat.dataset.id, true);
     const sub = e.target.closest('.sub'); if(sub) return complete(sub.dataset.id, true);
+    const op = e.target.closest('[data-open]'); if(op) return openView(op.dataset.open);
+    const cb = e.target.closest('[data-cal]');
+    if(cb){
+      if(cb.dataset.cal === 'today'){ const d = new Date(); cal = {y:d.getFullYear(), m:d.getMonth()}; calSel = today(); }
+      else { const n = new Date(cal.y, cal.m + (cb.dataset.cal === 'next' ? 1 : -1), 1); cal = {y:n.getFullYear(), m:n.getMonth()}; }
+      return render();
+    }
+    const dy = e.target.closest('.day');
+    if(dy){ calSel = dy.dataset.day; const [a, b2] = calSel.split('-'); cal = {y:+a, m:+b2 - 1}; return render(); }
     const b = e.target.closest('#view button[data-act]'); if(!b) return;
     const id = b.closest('.card').dataset.id, t = byId(id);
     if(b.dataset.act === 'toggle') complete(id, true);
+    if(b.dataset.act === 'view') openView(id);
     if(b.dataset.act === 'edit') openEdit(id);
     if(b.dataset.act === 'del') del(id);
-    if(b.dataset.act === 'notes'){ shown.has(id) ? shown.delete(id) : shown.add(id); render(); }
     if(b.dataset.act === 'frog'){ t.isFrog = !t.isFrog; if(t.isFrog) t.frogId = null; else state.tasks.forEach(x => { if(x.frogId === id) x.frogId = null; }); commit(); }
   });
   document.querySelectorAll('.tab').forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
@@ -502,6 +551,62 @@ footer b{color:var(--ink);display:block}
   });
   window.addEventListener('online', () => dirty ? flush() : pull(false));
   window.addEventListener('beforeunload', e => { if(dirty || saving){ e.preventDefault(); e.returnValue = ''; } });
+
+  /* ===== task viewer ===== */
+  let viewId = null;
+  function openView(id){
+    const t = byId(id); if(!t) return; viewId = id;
+    const fr = t.frogId && byId(t.frogId), l = !t.done && t.due && late(t.due);
+    $('vTitle').textContent = t.title;
+    $('vMeta').innerHTML = `<span class="tag" style="background:var(--${t.prio});color:#fff">${t.prio} · ${PR[t.prio][0]}</span>${t.isFrog ? '<span class="tag fr">🐸 Frog</span>' : ''}${fr ? `<span class="tag fr">🐸 ${esc(fr.title)}</span>` : ''}<span class="tag">${t.mins} min</span>${t.due ? `<span class="tag ${l > 0 ? 'late' : ''}">${l > 0 ? 'Overdue ' + l + ' d · ' : ''}Due ${t.due}</span>` : ''}${t.done ? `<span class="tag">✓ Done ${t.doneAt || ''}</span>` : ''}`;
+    $('vNotes').innerHTML = hasN(t) ? t.notes : '<span style="color:var(--muted)">No details yet. Click Edit to add some.</span>';
+    $('vDone').textContent = t.done ? 'Mark as not done' : 'Mark as done';
+    $('vdlg').showModal();
+  }
+  $('vClose').onclick = () => $('vdlg').close();
+  $('vEdit').onclick = () => { $('vdlg').close(); openEdit(viewId); };
+  $('vDone').onclick = () => { $('vdlg').close(); complete(viewId, true); };
+  $('vdlg').addEventListener('click', e => { if(e.target === $('vdlg')) $('vdlg').close(); });
+
+  /* ===== calendar + daily tracking ===== */
+  let cal = (() => { const d = new Date(); return {y:d.getFullYear(), m:d.getMonth()}; })(), calSel = today();
+  const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  function calHTML(){
+    const {y, m} = cal, lead = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate(), td = today();
+    const due = {}, dn = {};
+    state.tasks.forEach(t => { if(t.due) (due[t.due] = due[t.due] || []).push(t); if(t.doneAt) (dn[t.doneAt] = dn[t.doneAt] || []).push(t); });
+    let cells = '';
+    for(let i = 0, n = Math.ceil((lead + days) / 7) * 7; i < n; i++){
+      const dt = new Date(y, m, i - lead + 1), k = key(dt), L = due[k] || [], D = dn[k] || [], open = L.filter(t => !t.done).length;
+      cells += `<button class="day ${dt.getMonth() !== m ? 'dim' : ''} ${k === td ? 'today' : ''} ${k === calSel ? 'sel' : ''}" data-day="${k}" aria-label="${k}"><span class="dn">${dt.getDate()}</span>
+        ${L.slice(0, 2).map(t => `<i class="ch ${t.done ? 'fin' : ''}" style="--pc:var(--${t.prio})">${esc(t.title)}</i>`).join('')}${L.length > 2 ? `<i class="more">+${L.length - 2} more</i>` : ''}
+        ${open || D.length ? `<span class="cnt">${open ? `<b class="o">${open}</b>` : ''}${D.length ? `<b class="g">${D.length}✓</b>` : ''}</span>` : ''}</button>`;
+    }
+    const pre = y + '-' + pad(m + 1), doneM = state.tasks.filter(t => (t.doneAt || '').startsWith(pre)).length, dueM = state.tasks.filter(t => (t.due || '').startsWith(pre) && !t.done).length;
+    const [a, b, c] = calSel.split('-'), label = new Date(a, b - 1, c).toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    const doneD = state.tasks.filter(t => t.doneAt === calSel), plan = state.tasks.filter(t => t.due === calSel && t.doneAt !== calSel);
+    const carry = calSel === td ? state.tasks.filter(t => !t.done && t.due && t.due < td) : [];
+    const total = doneD.length + plan.filter(t => !t.done).length + carry.length;
+    const grp = (h, arr) => arr.length ? `<h4>${h} · ${arr.length}</h4>${arr.map(t => card(t, false)).join('')}` : '';
+    return `<div class="calwrap"><div>
+      <div class="calbar"><button class="chip" data-cal="prev" aria-label="Previous month">‹</button>
+        <h3>${new Date(y, m, 1).toLocaleDateString(undefined, {month:'long', year:'numeric'})}<small>${doneM} done · ${dueM} still to do this month</small></h3>
+        <button class="chip" data-cal="today">Today</button><button class="chip" data-cal="next" aria-label="Next month">›</button></div>
+      <div class="wk">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(w => `<span>${w}</span>`).join('')}</div>
+      <div class="cgrid">${cells}</div></div>
+      <aside class="dayp"><h3>${label}</h3><p class="dsub">${doneD.length} of ${total} done${calSel === td && carry.length ? ' (includes carried over)' : ''}</p>
+        <div class="bar"><i style="width:${total ? doneD.length / total * 100 : 0}%"></i></div>
+        <form id="dayForm" class="dayadd" autocomplete="off"><input type="text" id="dayTitle" placeholder="Add a task for this day" required maxlength="120" aria-label="New task for this day"><label class="toggle"><input type="checkbox" id="dayFrog"> Frog</label><button class="primary">Add</button></form>
+        ${grp('Carried over', carry)}${grp('Planned', plan)}${grp('Completed', doneD)}
+        ${carry.length + plan.length + doneD.length ? '' : '<div class="note">Nothing planned for this day yet.</div>'}</aside></div>`;
+  }
+  document.addEventListener('submit', e => {
+    if(e.target.id !== 'dayForm') return; e.preventDefault();
+    const title = $('dayTitle').value.trim(); if(!title) return;
+    const f = $('dayFrog').checked;
+    state.tasks.push({id:uid(), title, prio:f ? 'A' : 'C', due:calSel, mins:30, isFrog:f, frogId:null, notes:'', done:false, doneAt:null, created:today()});
+    toast('Task added for ' + calSel); commit(); const i = $('dayTitle'); if(i) i.focus();
+  });
 
   /* ===== rich text editor ===== */
   const ed = $('eNotes'); let rng = null;

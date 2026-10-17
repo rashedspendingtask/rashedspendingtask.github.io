@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BD CR Progress Tracker</title>
+<title>THE HIVE // CR Compliance Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -98,6 +98,24 @@ dialog[open]{animation:pop .18s ease-out}@keyframes pop{from{opacity:0;transform
 .chips{display:flex;gap:5px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:transparent;border-radius:16px;padding:2px 9px;font-size:13px;opacity:.5}.chip[aria-pressed=true]{opacity:1;border-color:var(--teal);background:rgba(63,232,201,.12)}
 .mini{padding:3px 10px;font-size:12px}
+.rt{border:1px solid var(--line);border-radius:10px;background:var(--cell)}
+.tb{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:6px;border-bottom:1px solid var(--line);background:var(--soft);border-radius:10px 10px 0 0}
+.tb button,.tb select{min-width:30px;height:30px;padding:0 7px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--ink);font-weight:700;font-size:13px}
+.tb select{border-color:var(--line);background:var(--cell);font-weight:600;max-width:110px}
+.tb button:hover:not(:disabled){background:var(--cell);border-color:var(--line)}.tb button.on{background:var(--tealD);border-color:var(--teal)}.tb button:disabled{opacity:.35;cursor:not-allowed}
+.tb .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+.pw{position:relative;display:inline-block}.bar{position:absolute;left:6px;right:6px;bottom:3px;height:3px;border-radius:2px}
+.pal{position:absolute;top:34px;left:0;z-index:6;display:grid;grid-template-columns:repeat(5,24px);gap:6px;padding:8px;background:var(--p1);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.pal[hidden],.tblbar[hidden]{display:none}
+.pal button{width:24px;min-width:0;height:24px;padding:0;border-radius:50%;border:1px solid var(--cellL);font-size:11px;color:var(--dim)}
+.tblbar{display:flex;flex:1 0 100%;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 2px 2px;font-size:13px;color:var(--dim)}
+.tblbar input{width:56px;padding:4px 6px;margin:0}
+.ed{min-height:180px;max-height:44vh;overflow:auto;padding:12px;outline:none;line-height:1.45;border-radius:0 0 10px 10px}
+.ed:empty::before{content:attr(data-ph);color:var(--faint)}
+.rich ul,.rich ol{margin:6px 0;padding-left:22px}.rich p,.rich div{margin:0 0 6px}.rich h2{font-size:18px;margin:8px 0 4px}.rich h3{font-size:15px;margin:8px 0 4px;color:var(--teal)}
+.rich table{border-collapse:collapse;width:100%;margin:6px 0}.rich td,.rich th{border:1px solid var(--cellL);padding:4px 7px;min-width:36px;vertical-align:top;text-align:left}.rich th{background:var(--soft)}
+.tipn{max-height:200px;overflow:auto;font-size:14px;margin-bottom:10px;border:1px solid var(--soft);border-radius:8px;padding:6px 8px}
+#dm{width:min(720px,calc(100vw - 24px))}
 .toast{position:fixed;top:16px;left:50%;transform:translate(-50%,-30px);background:linear-gradient(135deg,var(--teal),var(--green));color:#04150f;font-weight:700;padding:10px 20px;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.3s;z-index:99;max-width:92vw}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .skel .hive{opacity:.4;animation:pulse 1.2s infinite}
@@ -167,11 +185,45 @@ dialog[open]{animation:pop .18s ease-out}@keyframes pop{from{opacity:0;transform
 <dialog id="dm"><form id="dForm" method="dialog">
   <div class="dh"><h2 id="dTitle">Supplier details</h2><button type="button" class="btn mini" data-close aria-label="Close">✕</button></div>
   <div class="db">
+    <label>Save these details under task<select class="field" id="dTask"></select></label>
     <div class="two"><label>Contact person<input class="field" name="contact" autocomplete="off"></label><label>Phone<input class="field" name="phone" type="tel"></label></div>
     <div class="two"><label>Email<input class="field" name="email" type="email"></label><label>Location<input class="field" name="location" placeholder="City, country"></label></div>
     <div class="two"><label>Next audit / deadline<input class="field" name="audit" type="date"></label>
       <label>Risk level<select class="field" name="risk"><option value="">Not set</option><option>Low</option><option>Medium</option><option>High</option></select></label></div>
-    <label>Notes<textarea class="field" name="notes" rows="4" placeholder="Certificates, open issues, follow-ups…"></textarea></label>
+    <div><div class="eyebrow" style="margin-bottom:4px">Notes</div><div class="rt">
+      <div class="tb" id="rtTb" role="toolbar" aria-label="Text formatting">
+        <select id="rtBlock" aria-label="Text style"><option value="p">Normal</option><option value="h3">Heading</option><option value="h2">Title</option></select>
+        <select id="rtSize" aria-label="Font size"><option value="">Size</option><option value="2">Small</option><option value="3">Normal</option><option value="5">Large</option><option value="6">Huge</option></select>
+        <span class="sep"></span>
+        <button type="button" data-c="bold" title="Bold (Ctrl+B)" aria-label="Bold"><b>B</b></button>
+        <button type="button" data-c="italic" title="Italic (Ctrl+I)" aria-label="Italic"><i>I</i></button>
+        <button type="button" data-c="underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+        <button type="button" data-c="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+        <span class="sep"></span>
+        <span class="pw"><button type="button" data-pal="fg" title="Text color" aria-label="Text color">A<i class="bar" id="fgBar" style="background:#ff6b6b"></i></button><div class="pal" id="palFg" hidden></div></span>
+        <span class="pw"><button type="button" data-pal="hl" title="Highlight" aria-label="Highlight">🖍<i class="bar" id="hlBar" style="background:#f6c945"></i></button><div class="pal" id="palHl" hidden></div></span>
+        <span class="sep"></span>
+        <button type="button" data-c="insertUnorderedList" title="Bullet list" aria-label="Bullet list">• ≡</button>
+        <button type="button" data-c="insertOrderedList" title="Numbered list" aria-label="Numbered list">1.</button>
+        <button type="button" data-c="outdent" title="Decrease indent" aria-label="Decrease indent">⇤</button>
+        <button type="button" data-c="indent" title="Increase indent" aria-label="Increase indent">⇥</button>
+        <span class="sep"></span>
+        <button type="button" data-c="justifyLeft" title="Align left" aria-label="Align left">L</button>
+        <button type="button" data-c="justifyCenter" title="Align center" aria-label="Align center">C</button>
+        <button type="button" data-c="justifyRight" title="Align right" aria-label="Align right">R</button>
+        <span class="sep"></span>
+        <button type="button" data-act="painter" title="Format painter: copy formatting, then select text to apply it" aria-label="Format painter">🖌</button>
+        <button type="button" data-c="removeFormat" title="Clear formatting" aria-label="Clear formatting">Tx</button>
+        <button type="button" data-act="table" title="Table" aria-label="Table">▦</button>
+        <button type="button" data-c="undo" title="Undo" aria-label="Undo">↶</button>
+        <button type="button" data-c="redo" title="Redo" aria-label="Redo">↷</button>
+        <div class="tblbar" id="tblBar" hidden>Rows <input class="field" id="tR" type="number" min="1" max="20" value="3" aria-label="Rows"> Cols <input class="field" id="tC" type="number" min="1" max="8" value="3" aria-label="Columns">
+          <button type="button" class="btn mini pri" data-act="mkTable">Insert table</button><span class="sep"></span>
+          <button type="button" class="btn mini" data-tbl="addRow">+ Row</button><button type="button" class="btn mini" data-tbl="addCol">+ Col</button>
+          <button type="button" class="btn mini" data-tbl="delRow">− Row</button><button type="button" class="btn mini" data-tbl="delCol">− Col</button><button type="button" class="btn mini bad" data-tbl="delTable">Delete table</button></div>
+      </div>
+      <div class="ed rich" id="rtEd" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notes" data-ph="Certificates, open issues, follow-ups…"></div>
+    </div></div>
   </div>
   <div class="df"><button type="button" class="btn" data-close>Cancel</button><button class="btn pri" type="submit">Save details</button></div>
 </form></dialog>
@@ -223,7 +275,7 @@ const catOf = k => CATS.find(c => c.key === k);
 const num = i => String(i + 1).padStart(2, "0");
 
 let V = [], A = {}, S = {}, mode = "cat", cat = CATS[0].key, vid = null, term = "";
-let dirty = false, saving = false, ver = 0, stamp = "", saveTimer, firstSync = true;
+let dirty = false, saving = false, ver = 0, stamp = "", saveTimer, firstSync = true, migrated = false;
 
 function uniqueId(name){ let b = slug(name), id = b, n = 2; while (V.some(v => v.id === id)) id = b + "-" + n++; return id; }
 function fresh(){ const s = {}; V.forEach(v => { s[v.id] = {}; CATS.forEach(c => s[v.id][c.key] = 0); }); return s; }
@@ -235,6 +287,11 @@ function adopt(doc){
   const ids = new Set(V.map(v => v.id)); A = {};
   CATS.forEach(c => { const l = doc.assignments && Array.isArray(doc.assignments[c.key]) ? doc.assignments[c.key] : (doc.assignments ? [] : [...ids]); A[c.key] = new Set(l.filter(i => ids.has(i))); });
   S = fresh(); V.forEach(v => CATS.forEach(c => { const r = doc.state && doc.state[v.id]; if (r && r[c.key]) S[v.id][c.key] = r[c.key]; }));
+  const LEG = ["contact","phone","email","location","audit","risk","notes"];   // older files stored one flat set of details per supplier
+  V.forEach(v => { const d = v.d || {}; if (LEG.some(k => typeof d[k] === "string")) { const certs = /GOTS|GRS|OCS|RCS|RWS|EUROFLAX|REGENAGRI/i.test(String(d.notes || "")), sc = CATS.find(c => c.key === "scope");
+    // certificate notes belong to Scope Certificates; anything else goes to the supplier's first task
+    const t = ((sc && (A.scope.has(v.id) || certs)) ? sc : (CATS.find(c => A[c.key].has(v.id)) || CATS[0])).key, leg = {}; migrated = true;
+    LEG.forEach(k => { if (typeof d[k] === "string") { if (d[k]) leg[k] = d[k]; delete d[k]; } }); if (Object.keys(leg).length) d[t] = {...leg, ...(d[t] || {})}; } v.d = d; });
   stamp = doc.savedAt || ""; return true;
 }
 function toDoc(){
@@ -242,6 +299,7 @@ function toDoc(){
   V.forEach(v => { const r = {}; CATS.forEach(c => { if ((S[v.id] || {})[c.key]) r[c.key] = S[v.id][c.key]; }); if (Object.keys(r).length) st[v.id] = r; });
   return {savedAt:new Date().toISOString(), vendors:V.map(v => v.d && Object.keys(v.d).length ? v : {id:v.id, name:v.name}), categories:CATS, assignments:a, state:st};
 }
+const detOf = (v, k) => (v && v.d && v.d[k]) || {};
 const vById = id => V.find(v => v.id === id) || null;
 const assigned = k => V.filter(v => A[k].has(v.id));
 const cellsOf = id => CATS.filter(c => A[c.key].has(id));
@@ -274,6 +332,7 @@ async function sync(manual){
     if (d && Array.isArray(d.vendors) && d.vendors.length) {
       if (d.savedAt !== stamp) { adopt(d); fixActive(); cache(); renderAll(); if (!firstSync) toast("🔄 Updated from the cloud"); }
       setSync("saved");
+      if (migrated) { migrated = false; save(); toast("✎ Existing details moved to their tasks and saved"); }
     } else { save(); }   // empty bin: seed it with the current roster
     if (manual) toast("☁ Synced with JSONBin");
   } catch(e){ setSync(navigator.onLine ? "error" : "offline", navigator.onLine ? e.message : ""); }
@@ -288,7 +347,7 @@ function perRow(){
   return Math.max(2, Math.floor((avail + g) / (w + g)));
 }
 function hexHtml(label, st, icon, v, c, dim){
-  const has = Object.values(vById(v).d || {}).some(Boolean);
+  const has = Object.values(detOf(vById(v), c)).some(Boolean);
   return `<div class="hex s${st}${dim || ""}" role="button" tabindex="0" data-v="${esc(v)}" data-c="${c}" aria-label="${esc(label)}: ${STN[st]}">
     <span class="ic">${icon}</span><span class="lb">${esc(label)}</span><span class="st">${STL[st]}</span>
     <button type="button" class="hex-i${has ? " has" : ""}" aria-label="${has ? "View" : "Add"} supplier details" tabindex="0">i</button></div>`;
@@ -350,16 +409,17 @@ function setMode(m){ mode = m; $("vCat").classList.toggle("on", m === "cat"); $(
 /* ---------- Hover card ---------- */
 const tip = $("tip"); let tipEl = null, showT, hideT, pinned = false;
 function tipHtml(v, c){
-  const d = v.d || {}, st = S[v.id][c], row = (k, h) => h ? `<dt>${k}</dt><dd>${h}</dd>` : "";
+  const d = detOf(v, c), st = S[v.id][c], row = (k, h) => h ? `<dt>${k}</dt><dd>${h}</dd>` : "";
   const late = d.audit && new Date(d.audit + "T23:59:59") < new Date() && st !== 2;
   const rows = row("Contact", esc(d.contact)) + row("Email", d.email && `<a href="mailto:${esc(d.email)}">${esc(d.email)}</a>`)
     + row("Phone", d.phone && `<a href="tel:${esc(d.phone)}">${esc(d.phone)}</a>`) + row("Location", esc(d.location))
     + row("Deadline", d.audit && `<span class="${late ? "late" : ""}">${new Date(d.audit + "T00:00").toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"})}${late ? " · overdue" : ""}</span>`)
-    + row("Risk", d.risk && `<span class="risk ${esc(d.risk)}">${esc(d.risk)}</span>`) + row("Notes", esc(d.notes).replace(/\n/g, "<br>"));
+    + row("Risk", d.risk && `<span class="risk ${esc(d.risk)}">${esc(d.risk)}</span>`) ; 
+  const nh = d.notes ? notesHtml(d.notes) : "", has = !!(rows || nh);
   return `<h3>${esc(v.name)}</h3><div class="sub">${catOf(c).icon} ${esc(catOf(c).label)}</div>
     <div class="set" role="group" aria-label="Status">${STN.map((n, i) => `<button type="button" data-s="${i}" aria-pressed="${st === i}">${n}</button>`).join("")}</div>
-    ${rows ? `<dl>${rows}</dl>` : '<p class="empty">No details yet — add a contact, deadline or notes for this supplier.</p>'}
-    <button type="button" class="btn ${rows ? "" : "pri"}" data-edit style="width:100%">${rows ? "✎ Edit details" : "＋ Add details"}</button>
+    ${rows ? `<dl>${rows}</dl>` : ""}${nh ? `<div class="eyebrow" style="margin:0 0 4px">Notes</div><div class="rich tipn">${nh}</div>` : ""}${has ? "" : '<p class="empty">No details yet for this task — add a contact, deadline or notes.</p>'}
+    <button type="button" class="btn ${has ? "" : "pri"}" data-edit style="width:100%">${has ? "✎ Edit details" : "＋ Add details"}</button>
     <button type="button" class="btn bad" data-rm style="width:100%;margin-top:6px">− Remove from this task</button>`;
 }
 function placeTip(){
@@ -395,7 +455,7 @@ tip.addEventListener("mouseenter", () => clearTimeout(hideT));
 tip.addEventListener("mouseleave", () => hideTip());
 tip.addEventListener("click", e => {
   const s = e.target.closest("[data-s]"); if (s && tipEl) { S[tipEl.dataset.v][tipEl.dataset.c] = +s.dataset.s; save(); renderAll(); return; }
-  if (e.target.closest("[data-edit]") && tipEl) openDetails(tipEl.dataset.v);
+  if (e.target.closest("[data-edit]") && tipEl) openDetails(tipEl.dataset.v, tipEl.dataset.c);
   if (e.target.closest("[data-rm]") && tipEl) { const id = tipEl.dataset.v, k = tipEl.dataset.c, v = vById(id);
     if (v && confirm(`Remove ${v.name} from “${catOf(k).label}”? Its status is kept if you add it back.`)) { A[k].delete(id); hideTip(true); save(); renderAll(); toast(`− Removed ${v.name} from this task`); } }
 });
@@ -405,18 +465,115 @@ addEventListener("scroll", () => hideTip(true), true); addEventListener("resize"
 
 /* ---------- Details dialog ---------- */
 const dm = $("dm"), dForm = $("dForm"); let editId = null;
-function openDetails(id){
-  const v = vById(id); if (!v) return; editId = id; hideTip(true);
-  $("dTitle").textContent = v.name; const d = v.d || {};
-  ["contact","phone","email","location","audit","risk","notes"].forEach(k => dForm.elements[k].value = d[k] || "");
-  if ($("sm").open) $("sm").close(); dm.showModal();
+let editCat = null;
+function openDetails(id, k){
+  const v = vById(id); if (!v || !catOf(k)) return; editId = id; editCat = k; hideTip(true);
+  $("dTitle").innerHTML = `${esc(v.name)}<small style="display:block;font-family:var(--fb);font-weight:600;color:var(--teal);margin-top:2px">${esc(catOf(k).icon)} ${esc(catOf(k).label)} · details for this task only</small>`;
+  const d = detOf(v, k);
+  ["contact","phone","email","location","audit","risk"].forEach(f => dForm.elements[f].value = d[f] || "");
+  $("dTask").innerHTML = taskOpts(); $("dTask").value = k;
+  ed.innerHTML = d.notes ? notesHtml(d.notes) : ""; painter = null; savedRange = null; closePals(); $("tblBar").hidden = true;
+  if ($("sm").open) $("sm").close(); dm.showModal(); ed.focus();
 }
 dForm.addEventListener("submit", e => {
-  e.preventDefault(); const v = vById(editId); if (!v) return; const d = {};
-  ["contact","phone","email","location","audit","risk","notes"].forEach(k => { const x = dForm.elements[k].value.trim(); if (x) d[k] = x; });
-  v.d = d; dm.close(); save(); renderAll(); toast(`✎ Saved details for ${v.name}`);
+  e.preventDefault(); const v = vById(editId); if (!v || !catOf(editCat)) return; const d = {};
+  ["contact","phone","email","location","audit","risk"].forEach(f => { const x = dForm.elements[f].value.trim(); if (x) d[f] = x; });
+  const html = clean(ed.innerHTML).replace(/(<p><br><\/p>|<div><br><\/div>|<br>)+$/g, ""); if (!isEmpty(html)) d.notes = html;
+  const to = catOf($("dTask").value) ? $("dTask").value : editCat; v.d = v.d || {};
+  if (to !== editCat && Object.keys(detOf(v, to)).length && !confirm(`“${catOf(to).label}” already has details for ${v.name}. Replace them?`)) return;
+  delete v.d[editCat]; if (Object.keys(d).length) v.d[to] = d;
+  dm.close(); save(); renderAll(); toast(`✎ Saved details for ${v.name} · ${catOf(to).label}`);
 });
 document.querySelectorAll("dialog").forEach(d => { d.addEventListener("click", e => { if (e.target === d || e.target.closest("[data-close]")) d.close(); }); });
+
+/* ---------- Rich text editor (Word-style notes) ---------- */
+const ed = $("rtEd"), ALLOW = new Set(["B","STRONG","I","EM","U","S","STRIKE","DEL","UL","OL","LI","P","BR","DIV","SPAN","H2","H3","TABLE","THEAD","TBODY","TR","TD","TH","BLOCKQUOTE"]);
+const COLOR_RE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i, SIZE_RE = /^([\d.]+(px|pt|em|rem|%)|x-small|small|medium|large|x-large|xx-large|xxx-large)$/i, CLEAR_RE = /^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/i;
+function clean(html){   // whitelist sanitizer: only simple formatting survives, no scripts, links or attributes
+  const t = document.createElement("template"); t.innerHTML = html;
+  const walk = n => [...n.childNodes].forEach(c => {
+    if (c.nodeType === 3) return;
+    if (c.nodeType !== 1 || !ALLOW.has(c.tagName)) {
+      if (c.nodeType === 1 && /^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|HEAD|TITLE|META|LINK)$/.test(c.tagName)) { c.remove(); return; }
+      walk(c); c.replaceWith(...c.childNodes); return;
+    }
+    const keep = {};
+    (c.getAttribute("style") || "").split(";").forEach(r => { const i = r.indexOf(":"); if (i < 0) return; const k = r.slice(0, i).trim().toLowerCase(), v = r.slice(i + 1).trim();
+      if ((k === "color" || k === "background-color") && COLOR_RE.test(v)) keep[k] = v;
+      else if (k === "font-size" && SIZE_RE.test(v)) keep[k] = v;
+      else if (k === "text-align" && /^(left|center|right|justify)$/i.test(v)) keep[k] = v; });
+    if (CLEAR_RE.test(keep["background-color"] || "")) delete keep["background-color"];
+    if (keep["background-color"] && !keep.color) keep.color = "#0b1220";   // keep text readable on a highlight
+    [...c.attributes].forEach(a => c.removeAttribute(a.name));
+    const css = Object.entries(keep).map(([k, v]) => k + ":" + v).join(";"); if (css) c.setAttribute("style", css);
+    walk(c);
+  });
+  walk(t.content); return t.innerHTML;
+}
+const isEmpty = h => { const d = document.createElement("div"); d.innerHTML = h; return !d.textContent.trim() && !d.querySelector("table"); };
+function notesHtml(x){ x = String(x || ""); return /<\/?[a-z][\s\S]*>/i.test(x) ? clean(x) : esc(x).replace(/\n/g, "<br>"); }
+
+let savedRange = null, painter = null;
+const FG = ["#eaf6f4","#ff6b6b","#f6c945","#8be07d","#3fe8c9","#5aa9ff","#c792ea","#ff9f43","#9aa7b4","#000000"], HL = ["#f6c945","#8be07d","#3fe8c9","#5aa9ff","#ff9ecb","#ff9f43","#d0d7de","transparent"];
+const pal = (a, id) => { $(id).innerHTML = a.map(c => `<button type="button" data-col="${c}" style="background:${c}" title="${c === "transparent" ? "No highlight" : c}" aria-label="${c}">${c === "transparent" ? "✕" : ""}</button>`).join(""); };
+pal(FG, "palFg"); pal(HL, "palHl");
+const closePals = () => { $("palFg").hidden = true; $("palHl").hidden = true; };
+document.execCommand("defaultParagraphSeparator", false, "p");
+document.addEventListener("selectionchange", () => { const s = getSelection(); if (s.rangeCount && ed.contains(s.anchorNode)) { savedRange = s.getRangeAt(0).cloneRange(); updTb(); } });
+function focusEd(){ ed.focus(); if (savedRange) { const s = getSelection(); s.removeAllRanges(); s.addRange(savedRange); } }
+function run(c, v){ focusEd(); document.execCommand("styleWithCSS", false, true); document.execCommand(c, false, v == null ? null : v); updTb(); }
+function cellEl(){ const s = getSelection(); let n = s.rangeCount ? s.anchorNode : null; if (n && n.nodeType === 3) n = n.parentElement; const td = n && n.closest ? n.closest("td,th") : null; return td && ed.contains(td) ? td : null; }
+function updTb(){
+  ["bold","italic","underline","strikeThrough","insertUnorderedList","insertOrderedList"].forEach(c => { const b = $("rtTb").querySelector(`[data-c="${c}"]`); if (b) b.classList.toggle("on", document.queryCommandState(c)); });
+  const n = cellEl(); if (n) $("tblBar").hidden = false; $("tblBar").querySelectorAll("[data-tbl]").forEach(b => b.disabled = !n);
+}
+function insertTable(){
+  const r = Math.min(20, Math.max(1, +$("tR").value || 3)), c = Math.min(8, Math.max(1, +$("tC").value || 3)); let h = "<table><tbody>";
+  for (let i = 0; i < r; i++) { const t = i ? "td" : "th"; h += "<tr>" + `<${t}><br></${t}>`.repeat(c) + "</tr>"; }
+  run("insertHTML", h + "</tbody></table><p><br></p>");
+}
+function tableOp(op){
+  const td = cellEl(); if (!td) return toast("Place the cursor inside a table first");
+  const tr = td.parentElement, t = td.closest("table"), i = td.cellIndex, rows = [...t.rows], mk = tag => { const d = document.createElement(tag); d.innerHTML = "<br>"; return d; };
+  if (op === "addRow") { const nr = document.createElement("tr"); [...tr.cells].forEach(() => nr.appendChild(mk("td"))); tr.after(nr); }
+  else if (op === "addCol") rows.forEach(r => { const n = mk(r.cells[i] ? r.cells[i].tagName.toLowerCase() : "td"); r.cells[i] ? r.cells[i].after(n) : r.appendChild(n); });
+  else if (op === "delRow") { rows.length > 1 ? tr.remove() : t.remove(); }
+  else if (op === "delCol") { if (tr.cells.length > 1) rows.forEach(r => r.cells[i] && r.deleteCell(i)); else t.remove(); }
+  else if (op === "delTable") t.remove();
+  updTb();
+}
+function togglePainter(){
+  const btn = $("rtTb").querySelector('[data-act="painter"]');
+  if (painter) { painter = null; btn.classList.remove("on"); return; }
+  let el = savedRange ? savedRange.startContainer : null; if (el && el.nodeType === 3) el = el.parentElement;
+  if (!el || !ed.contains(el)) return toast("Click inside the formatted text you want to copy first");
+  const cs = getComputedStyle(el), dec = cs.textDecorationLine || "";
+  painter = {b: +cs.fontWeight >= 600, i: cs.fontStyle === "italic", u: dec.includes("underline"), s: dec.includes("line-through"), fg: cs.color, bg: cs.backgroundColor};
+  btn.classList.add("on"); toast("🖌 Format copied. Now select the text to apply it to");
+}
+function paint(){
+  const f = painter; painter = null; $("rtTb").querySelector('[data-act="painter"]').classList.remove("on");
+  focusEd(); document.execCommand("styleWithCSS", false, true);
+  [["bold", f.b], ["italic", f.i], ["underline", f.u], ["strikeThrough", f.s]].forEach(([c, w]) => { if (document.queryCommandState(c) !== w) document.execCommand(c); });
+  document.execCommand("foreColor", false, f.fg); document.execCommand("hiliteColor", false, CLEAR_RE.test(f.bg) ? "transparent" : f.bg); updTb();
+}
+$("rtTb").addEventListener("mousedown", e => { if (!e.target.closest("select,input")) e.preventDefault(); });   // keep the text selection while clicking tools
+$("rtTb").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.c) run(b.dataset.c);
+  else if (b.dataset.pal) { const p = $(b.dataset.pal === "fg" ? "palFg" : "palHl"), open = p.hidden; closePals(); p.hidden = !open; }
+  else if (b.dataset.col) { const fg = !!b.closest("#palFg"); run(fg ? "foreColor" : "hiliteColor", b.dataset.col); $(fg ? "fgBar" : "hlBar").style.background = b.dataset.col === "transparent" ? "var(--faint)" : b.dataset.col; closePals(); }
+  else if (b.dataset.act === "painter") togglePainter();
+  else if (b.dataset.act === "table") $("tblBar").hidden = !$("tblBar").hidden;
+  else if (b.dataset.act === "mkTable") insertTable();
+  else if (b.dataset.tbl) tableOp(b.dataset.tbl);
+});
+$("tblBar").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); insertTable(); } });   // Enter must not submit the form
+$("rtBlock").onchange = e => run("formatBlock", "<" + e.target.value + ">");
+$("rtSize").onchange = e => { if (e.target.value) run("fontSize", e.target.value); e.target.value = ""; };
+ed.addEventListener("mouseup", () => { if (painter && !getSelection().isCollapsed) paint(); });
+ed.addEventListener("paste", e => { e.preventDefault(); const h = e.clipboardData.getData("text/html"), t = e.clipboardData.getData("text/plain"); document.execCommand("insertHTML", false, h ? clean(h) : esc(t).replace(/\n/g, "<br>")); });
+document.addEventListener("click", e => { if (!e.target.closest(".pw")) closePals(); });
 
 /* ---------- Manage suppliers ---------- */
 const sm = $("sm");
@@ -426,7 +583,7 @@ function renderSM(){
       <div class="chips">${CATS.map(c => `<label class="chip" style="opacity:1;display:flex;gap:5px;cursor:pointer"><input type="checkbox" value="${c.key}" ${mode === "cat" && c.key === cat ? "checked" : ""}>${c.icon} ${esc(c.label.replace(/ \(.*\)/, ""))}</label>`).join("")}</div>
       <button class="btn pri">Add supplier to selected tasks</button></form>
     <ul class="sl">${V.map(v => `<li class="sr"><div class="top"><b>${esc(v.name)}</b><span style="display:flex;gap:6px">
-      <button class="btn mini" data-d="${esc(v.id)}">Details</button><button class="btn mini bad" data-r="${esc(v.id)}">Delete</button></span></div>
+      <button class="btn mini bad" data-r="${esc(v.id)}">Delete</button></span></div>
       <div class="chips">${CATS.map(c => `<button class="chip" data-t="${esc(v.id)}|${c.key}" aria-pressed="${A[c.key].has(v.id)}" title="${esc(c.label)}">${c.icon}</button>`).join("")}</div></li>`).join("")}</ul>`;
 }
 function openSM(){ renderSM(); sm.showModal(); }
@@ -441,7 +598,6 @@ sm.addEventListener("submit", e => {
 sm.addEventListener("click", e => {
   const t = e.target.closest("[data-t]"), d = e.target.closest("[data-d]"), r = e.target.closest("[data-r]");
   if (t) { const [id, k] = t.dataset.t.split("|"); A[k].has(id) ? A[k].delete(id) : A[k].add(id); save(); renderAll(); }
-  else if (d) openDetails(d.dataset.d);
   else if (r) { const v = vById(r.dataset.r); if (!v || !confirm(`Delete ${v.name} and all its progress?`)) return;
     V = V.filter(x => x.id !== v.id); delete S[v.id]; CATS.forEach(c => A[c.key].delete(v.id)); fixActive(); save(); renderAll(); toast(`✕ Deleted ${v.name}`); }
 });
@@ -480,11 +636,15 @@ $("addSup").onclick = () => openSP(cat);
 
 /* ---------- Add / manage tasks ---------- */
 const tm = $("tm");
+function taskOpts(){ return CATS.map(c => `<option value="${esc(c.key)}">${esc(c.icon)} ${esc(c.label)}</option>`).join(""); }
 function renderTM(){
   $("tmBody").innerHTML = `<form id="tForm" class="sr"><div class="two"><input class="field" id="tName" style="margin:0" placeholder="New task name…" required autocomplete="off"><input class="field" id="tIcon" style="margin:0" placeholder="Emoji (optional)" maxlength="4"></div>
     <select class="field" id="tAssign" style="margin:0"><option value="all">Start with all suppliers</option><option value="none">Start with no suppliers</option></select>
     <button class="btn pri">Add task</button></form>
-    <ul class="sl">${CATS.map(c => `<li class="sr"><div class="top"><b>${esc(c.icon)} ${esc(c.label)}</b><span style="display:flex;gap:8px;align-items:center"><small>${assigned(c.key).length} suppliers</small><button class="btn mini bad" data-del="${esc(c.key)}">Delete</button></span></div></li>`).join("")}</ul>`;
+    <ul class="sl">${CATS.map(c => `<li class="sr"><div class="top"><b>${esc(c.icon)} ${esc(c.label)}</b><span style="display:flex;gap:8px;align-items:center"><small>${assigned(c.key).length} suppliers</small><button class="btn mini bad" data-del="${esc(c.key)}">Delete</button></span></div></li>`).join("")}</ul>
+    <form id="mvForm" class="sr"><div class="eyebrow">Move all details from one task to another</div>
+      <div class="two"><select class="field" id="mvFrom" style="margin:0" aria-label="From task">${taskOpts()}</select><select class="field" id="mvTo" style="margin:0" aria-label="To task">${taskOpts()}</select></div>
+      <button class="btn">Move details</button></form>`;
 }
 tm.addEventListener("submit", e => {
   if (e.target.id !== "tForm") return; e.preventDefault();
@@ -496,11 +656,22 @@ tm.addEventListener("submit", e => {
   V.forEach(v => { S[v.id][key] = 0; }); cat = key; mode === "cat" || setMode("cat");
   save(); renderAll(); renderTM(); toast(`➕ Task “${name}” added`);
 });
+tm.addEventListener("submit", e => {
+  if (e.target.id !== "mvForm") return; e.preventDefault();
+  const from = $("mvFrom").value, to = $("mvTo").value; if (from === to) return toast("⚠ Pick two different tasks");
+  const has = v => Object.keys(detOf(v, from)).length, list = V.filter(has);
+  if (!list.length) return toast(`No details saved under “${catOf(from).label}”`);
+  if (!confirm(`Move the details of ${list.length} supplier${list.length === 1 ? "" : "s"} from “${catOf(from).label}” to “${catOf(to).label}”?\nSuppliers that already have details on the target task are left as they are.`)) return;
+  let moved = 0, skipped = 0;
+  list.forEach(v => { if (Object.keys(detOf(v, to)).length) { skipped++; return; } v.d[to] = v.d[from]; delete v.d[from]; moved++; });
+  if (moved) { save(); renderAll(); }
+  renderTM(); toast(`✎ Moved details for ${moved} supplier${moved === 1 ? "" : "s"}${skipped ? ` · ${skipped} skipped (target already had details)` : ""}`);
+});
 tm.addEventListener("click", e => {
   const b = e.target.closest("[data-del]"); if (!b) return; const c = catOf(b.dataset.del); if (!c) return;
   if (CATS.length < 2) return toast("⚠ Keep at least one task");
   if (!confirm(`Delete task “${c.label}” and its progress for every supplier?`)) return;
-  CATS = CATS.filter(x => x.key !== c.key); delete A[c.key]; V.forEach(v => { delete S[v.id][c.key]; });
+  CATS = CATS.filter(x => x.key !== c.key); delete A[c.key]; V.forEach(v => { delete S[v.id][c.key]; if (v.d) delete v.d[c.key]; });
   save(); renderAll(); renderTM(); toast(`✕ Task “${c.label}” deleted`);
 });
 $("tasks").onclick = () => { renderTM(); tm.showModal(); };

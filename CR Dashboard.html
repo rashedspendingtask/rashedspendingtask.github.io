@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BD CR Progress Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060d18;--p1:#122942;--p2:#0d1c2f;--line:#1f3c58;--soft:#16293e;--teal:#3fe8c9;--tealD:#1e6d63;--green:#8be07d;--amber:#f6c945;--coral:#ff6b6b;--ink:#eaf6f4;--dim:#8ea9bd;--faint:#6a8397;--cell:#16283d;--cellL:#2a4763;--fd:'Orbitron',sans-serif;--fb:'Rajdhani',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;min-height:100vh;font-family:var(--fb);color:var(--ink);font-size:15px;background:radial-gradient(circle at 15% 10%,#0e2038,transparent 45%),radial-gradient(circle at 85% 15%,#10263a,transparent 40%),var(--bg);background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.station{max-width:1400px;margin:auto;border:1px solid var(--line);border-radius:20px;padding:16px;background:linear-gradient(180deg,rgba(18,41,66,.55),rgba(9,20,34,.75));box-shadow:0 30px 80px -30px #000}
+.panel,.hud{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--p1),var(--p2));padding:14px}
+.hud{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.eyebrow{font-size:12px;color:var(--faint);letter-spacing:.06em}
+.title{font-family:var(--fd);font-weight:900;font-size:22px;color:var(--teal);text-shadow:0 0 18px rgba(63,232,201,.45);margin:0}
+.xp{font-family:var(--fd);font-weight:900;font-size:28px;color:var(--amber);line-height:1}
+.prog{flex:1 1 240px;min-width:220px;display:grid;gap:6px}
+.prog div:first-child{display:flex;justify-content:space-between;color:var(--dim);font-size:13px}
+.meter{height:12px;border-radius:8px;background:var(--cell);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--tealD),var(--teal));box-shadow:0 0 12px rgba(63,232,201,.6);transition:width .5s}
+.badge{font-family:var(--fd);font-size:13px;font-weight:700;color:#04150f;background:linear-gradient(135deg,var(--teal),var(--green));padding:5px 12px;border-radius:20px;display:inline-block}
+.pill{border:1px solid var(--line);background:var(--cell);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.saved{color:var(--teal)}.pill.saving,.pill.loading{color:var(--amber)}.pill.error{color:var(--coral)}.pill.offline{color:var(--faint)}
+.pill.saving::before,.pill.loading::before{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.2}}
+.grid>*{min-width:0}.grid{display:grid;grid-template-columns:260px 1fr 270px;gap:14px;align-items:start}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+h2.pt{font-family:var(--fd);font-size:12px;letter-spacing:.08em;color:var(--dim);margin:0 0 10px;text-transform:uppercase}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button,.btn{border:1px solid var(--line);background:var(--cell);color:var(--dim);border-radius:8px;padding:8px;font-weight:700;font-size:13px;transition:.15s}
+.seg button{flex:1}
+.seg button.on{background:linear-gradient(135deg,var(--tealD),var(--teal));color:#04150f;border-color:var(--teal)}
+.btn:hover{border-color:var(--tealD);color:var(--ink)}
+.btn.pri{background:linear-gradient(135deg,var(--tealD),var(--teal));color:#04150f;border:0}
+.btn.bad:hover{border-color:var(--coral);color:var(--coral)}
+.field{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--cell);margin-bottom:8px}
+.cats{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:6px}
+.cat{display:flex;gap:8px;align-items:center;padding:8px 9px;border:1px solid var(--line);background:var(--cell);border-radius:9px;cursor:pointer;transition:.15s}
+.cat:hover{border-color:var(--tealD)}.cat.on{border-color:var(--teal);background:rgba(63,232,201,.1)}
+.cat b{flex:1;font-size:14px;min-width:0}.cat small{color:var(--dim);font-size:12px}
+.cat .mm{height:4px;background:var(--soft);border-radius:3px;margin-top:4px;overflow:hidden}.cat .mm i{display:block;height:100%;background:var(--teal)}
+.legend{display:grid;gap:6px;color:var(--dim);font-size:13px;margin:14px 0}
+.legend span{display:flex;gap:8px;align-items:center}.legend i{width:14px;height:14px;border-radius:4px}
+.utils{display:grid;gap:7px}
+.vp-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:baseline}
+.vp-head h2{font-family:var(--fd);font-size:15px;margin:0}.vp-head span{color:var(--faint);font-size:13px}
+.scroll{overflow:auto;max-height:600px;min-height:420px;padding:14px 6px;border:1px solid var(--soft);border-radius:12px;background:radial-gradient(ellipse at 50% 0,rgba(63,232,201,.06),transparent 60%)}
+.hive{--w:108px;--h:122px;--gap:12px;--ov:30px;display:flex;flex-direction:column;align-items:center}
+.row{display:flex;gap:var(--gap)}.row.sh{margin-left:calc((var(--w) + var(--gap))/2)}.row+.row{margin-top:calc(var(--ov) * -1)}
+.hex{position:relative;flex:0 0 var(--w);width:var(--w);height:var(--h);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--cell);outline:2px solid var(--cellL);outline-offset:-2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 14px;cursor:pointer;transition:transform .15s,background .2s}
+.hex:hover,.hex:focus-visible,.hex.tipped{transform:translateY(-4px) scale(1.05);z-index:3}
+.hex .ic{font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:.04em;color:var(--dim)}.hex.s1 .ic{color:var(--amber)}.hex.s2 .ic{color:var(--teal)}.hex .lb{font-weight:700;font-size:12px;line-height:1.1;text-align:center;color:var(--dim);word-break:break-word}
+.hex .st{font-size:10px;letter-spacing:.04em;color:var(--faint)}
+.hex.s1{background:linear-gradient(180deg,#5a4a1c,#3c3214);outline-color:var(--amber)}.hex.s1 .st{color:var(--amber)}
+.hex.s2{background:linear-gradient(180deg,#134a44,#0c322e);outline-color:var(--teal)}.hex.s2 .st{color:var(--teal)}.hex.s2 .lb{color:var(--ink)}
+.hex.match{outline-color:#fff}.hex.dim{opacity:.25}
+.hex-i{position:absolute;top:13px;right:27px;width:18px;height:18px;border-radius:50%;border:1px solid var(--cellL);background:rgba(6,13,24,.7);color:var(--dim);font-size:11px;font-weight:700;line-height:1;padding:0;display:grid;place-items:center}
+.hex-i.has{background:var(--teal);color:#04150f;border-color:var(--teal)}
+.ring{position:relative;width:132px;height:132px;margin:0 auto 14px}.ring svg{transform:rotate(-90deg)}
+.ring-c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring-c b{font-family:var(--fd);font-size:24px;color:var(--teal)}.ring-c small{font-size:10px;color:var(--faint)}
+.stat{display:flex;justify-content:space-between;color:var(--dim);font-size:13px;padding:4px 0;border-bottom:1px dashed var(--soft)}.stat b{color:var(--ink)}
+.board{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px;font-size:13px}
+.board li{display:flex;gap:8px;align-items:flex-start}.board span{flex:1;min-width:0;color:var(--dim);overflow-wrap:anywhere;line-height:1.25}.board b{flex:0 0 auto;color:var(--teal)}
+.mascot{margin-top:14px;display:flex;gap:14px;align-items:center;justify-content:center;padding:12px}
+.mascot .bee{font-size:34px;animation:bob 3s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-6px)}}
+.mascot p{margin:0;background:var(--cell);border:1px solid var(--tealD);border-radius:12px;padding:10px 16px;max-width:600px}.mascot b{color:var(--teal)}
+/* hover card */
+#tip{position:fixed;z-index:80;width:min(330px,calc(100vw - 16px));background:rgba(13,28,47,.96);backdrop-filter:blur(10px);border:1px solid var(--tealD);border-radius:14px;padding:14px;box-shadow:0 20px 50px rgba(0,0,0,.6);opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .15s,transform .15s,visibility .15s}
+#tip.open{opacity:1;visibility:visible;transform:none}
+#tip h3{margin:0;font-size:18px;line-height:1.1}#tip .sub{color:var(--teal);font-size:13px;margin-bottom:10px}
+#tip .set{display:flex;gap:4px;margin-bottom:10px}
+#tip .set button{flex:1;border:1px solid var(--line);background:var(--cell);border-radius:7px;padding:5px 2px;font-size:12px;font-weight:700;color:var(--dim)}
+#tip .set button[aria-pressed=true]{color:#04150f;border-color:transparent}
+#tip .set button[data-s="0"][aria-pressed=true]{background:var(--dim)}#tip .set button[data-s="1"][aria-pressed=true]{background:var(--amber)}#tip .set button[data-s="2"][aria-pressed=true]{background:var(--teal)}
+#tip dl{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:14px}
+#tip dt{color:var(--faint)}#tip dd{margin:0;word-break:break-word}#tip a{color:var(--teal)}
+#tip .empty{color:var(--dim);font-size:14px;margin:0 0 10px}
+.risk{padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;color:#04150f}.risk.Low{background:var(--green)}.risk.Medium{background:var(--amber)}.risk.High{background:var(--coral)}
+.late{color:var(--coral)}
+/* dialogs */
+dialog{width:min(480px,calc(100vw - 24px));max-height:88vh;padding:0;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,var(--p1),var(--p2));color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(4,10,10,.72);backdrop-filter:blur(3px)}
+dialog[open]{animation:pop .18s ease-out}@keyframes pop{from{opacity:0;transform:scale(.97)}}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}.dh h2{margin:0;font-family:var(--fd);font-size:16px}
+.db{padding:16px 18px;display:grid;gap:10px;overflow:auto;max-height:68vh}.df{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.db label{display:grid;gap:4px;font-size:13px;color:var(--dim)}.db label .field{margin:0;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:440px){.two{grid-template-columns:1fr}}
+.sl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.sr{padding:9px 11px;border:1px solid var(--line);background:var(--cell);border-radius:9px;display:grid;gap:6px}
+.sr .top{display:flex;justify-content:space-between;gap:8px;align-items:center}.sr .top b{min-width:0;overflow-wrap:anywhere}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:transparent;border-radius:16px;padding:2px 9px;font-size:13px;opacity:.5}.chip[aria-pressed=true]{opacity:1;border-color:var(--teal);background:rgba(63,232,201,.12)}
+.mini{padding:3px 10px;font-size:12px}
+.toast{position:fixed;top:16px;left:50%;transform:translate(-50%,-30px);background:linear-gradient(135deg,var(--teal),var(--green));color:#04150f;font-weight:700;padding:10px 20px;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.3s;z-index:99;max-width:92vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.skel .hive{opacity:.4;animation:pulse 1.2s infinite}
+.empty-h{margin:auto;text-align:center;color:var(--faint);padding:40px 20px}
+@media(max-width:560px){body{padding:10px}.hive{--w:86px;--h:99px;--gap:8px;--ov:24px}.hex .lb{font-size:11px}.hex-i{right:20px;top:10px}}
+@media(prefers-reduced-motion:reduce){*,::before{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="station">
+  <header class="hud">
+    <div><div class="eyebrow">XP collected</div><div class="xp" id="xp">0</div><div class="eyebrow" id="xpMax">of 0 XP</div></div>
+    <div><div class="eyebrow">Mission</div><h1 class="title">THE HIVE</h1><div class="eyebrow">CR Compliance Tracker · 2026</div></div>
+    <div class="prog"><div><span>Overall progress</span><span id="pctTxt">0%</span></div><div class="meter"><i id="meter"></i></div></div>
+    <div style="text-align:right;display:grid;gap:6px;justify-items:end"><span class="badge" id="rank">Trainee Auditor</span><button class="pill offline" id="sync" aria-live="polite" title="Sync now">Connecting…</button></div>
+  </header>
+
+  <main class="grid">
+    <aside class="panel">
+      <h2 class="pt">Navigation</h2>
+      <div class="seg"><button id="vCat" class="on">By task</button><button id="vVen">By supplier</button></div>
+      <input class="field" id="search" type="search" placeholder="Search supplier…" aria-label="Search supplier">
+      <ul class="cats" id="cats"></ul>
+      <select class="field" id="venSel" aria-label="Supplier" hidden></select>
+      <div class="legend">
+        <span><i style="background:var(--cell);outline:2px solid var(--cellL)"></i>Not started</span>
+        <span><i style="background:#5a4a1c;outline:2px solid var(--amber)"></i>In progress</span>
+        <span><i style="background:#134a44;outline:2px solid var(--teal)"></i>Complete</span>
+        <span>Click a hex to cycle status. Hover it for supplier details.</span>
+      </div>
+      <div class="utils">
+        <button class="btn pri" id="manage">👥 Manage suppliers</button>
+        <button class="btn pri" id="tasks">➕ Add / manage tasks</button>
+        <button class="btn" id="exp">💾 Save progress (.json)</button>
+        <button class="btn" id="imp">📂 Load progress</button>
+        <input type="file" id="impFile" accept="application/json" hidden>
+        <button class="btn bad" id="reset">⟲ Reset all progress</button>
+      </div>
+    </aside>
+
+    <section class="panel" id="vp">
+      <div class="vp-head"><h2 id="vpTitle">—</h2><span id="vpHint"></span><button class="btn mini pri" id="addSup">＋ Add / remove suppliers</button></div>
+      <div class="scroll" id="scroll"><div class="hive" id="hive"></div></div>
+    </section>
+
+    <aside class="panel">
+      <h2 class="pt">Mission dashboard</h2>
+      <div class="ring">
+        <svg width="132" height="132" viewBox="0 0 132 132"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fe8c9"/><stop offset="1" stop-color="#8be07d"/></linearGradient></defs>
+        <circle cx="66" cy="66" r="56" fill="none" stroke="#16293e" stroke-width="10"/>
+        <circle id="ringF" cx="66" cy="66" r="56" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="351.9" stroke-dashoffset="351.9" style="transition:stroke-dashoffset .6s"/></svg>
+        <div class="ring-c"><b id="ringP">0%</b><small>HIVE COMPLETE</small></div>
+      </div>
+      <div class="stat"><span>Suppliers tracked</span><b id="sV">0</b></div>
+      <div class="stat"><span>Cells complete</span><b id="sD">0 / 0</b></div>
+      <div class="stat" style="margin-bottom:14px"><span>Cells in progress</span><b id="sP">0</b></div>
+      <h2 class="pt">Top suppliers</h2><ul class="board" id="top"></ul>
+      <h2 class="pt">Needs attention</h2><ul class="board" id="low"></ul>
+    </aside>
+  </main>
+
+  <div class="panel mascot"><span class="bee" aria-hidden="true">🐝</span><p id="say"></p></div>
+</div>
+
+<div id="tip" role="dialog" aria-label="Supplier details"></div>
+
+<dialog id="dm"><form id="dForm" method="dialog">
+  <div class="dh"><h2 id="dTitle">Supplier details</h2><button type="button" class="btn mini" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="two"><label>Contact person<input class="field" name="contact" autocomplete="off"></label><label>Phone<input class="field" name="phone" type="tel"></label></div>
+    <div class="two"><label>Email<input class="field" name="email" type="email"></label><label>Location<input class="field" name="location" placeholder="City, country"></label></div>
+    <div class="two"><label>Next audit / deadline<input class="field" name="audit" type="date"></label>
+      <label>Risk level<select class="field" name="risk"><option value="">Not set</option><option>Low</option><option>Medium</option><option>High</option></select></label></div>
+    <label>Notes<textarea class="field" name="notes" rows="4" placeholder="Certificates, open issues, follow-ups…"></textarea></label>
+  </div>
+  <div class="df"><button type="button" class="btn" data-close>Cancel</button><button class="btn pri" type="submit">Save details</button></div>
+</form></dialog>
+
+<dialog id="sm">
+  <div class="dh"><h2>Manage suppliers</h2><button type="button" class="btn mini" data-close aria-label="Close">✕</button></div>
+  <div class="db" id="smBody"></div>
+</dialog>
+
+<dialog id="sp">
+  <div class="dh"><h2 id="spTitle">Suppliers</h2><button type="button" class="btn mini" data-close aria-label="Close">✕</button></div>
+  <div class="db" id="spBody"></div>
+</dialog>
+
+<dialog id="tm">
+  <div class="dh"><h2>Add / manage tasks</h2><button type="button" class="btn mini" data-close aria-label="Close">✕</button></div>
+  <div class="db" id="tmBody"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- JSONBin config ---------- */
+const BIN_ID = "6ad30403ffd5d1605372cb3b";
+const MASTER_KEY = "$2a$10$/hp/j.v4UL3IFb7fXpjwzulDpeP9J.Lp.SSCewr.DIx/3RWokv.t2";
+const API = "https://api.jsonbin.io/v3/b/" + BIN_ID;
+const AUTH = { "X-Master-Key": MASTER_KEY };
+const POLL_MS = 60000, CACHE = "cr-hive-jsonbin-v1";
+
+/* ---------- Data ---------- */
+const DEFAULT_CATS = [
+  {key:"sct",label:"Supply Chain Transparency (SCT)",icon:"🔗"},{key:"higg",label:"Higg FEM",icon:"🌿"},
+  {key:"bhive",label:"b-Hive",icon:"🐝"},{key:"tc",label:"Transaction Certificates (TCs)",icon:"📜"},
+  {key:"ppwr",label:"PPWR-related Topics",icon:"♻️"},{key:"pack",label:"CmiA",icon:"📦"},
+  {key:"scope",label:"Scope Certificates",icon:"🛡️"}];
+let CATS = DEFAULT_CATS.map(c => ({...c}));
+const NAMES = ["Absolute Quality Wear","Apex Textile Printing Mills Ltd","Azim & Son (Pvt) Ltd.","Cotton Club","Daeyu Bangladesh","Graphics Textiles","Hop Lun","Integra Apparels","Islam Knit","Jeans & Polo Limited","Louietex","Masco","Meditex Industries Ltd.","Naheed Fine Tex","Noman Terry Towel","Oasis Fashion","Chittagong Denim Mills","Akij Textile Mills Ltd.","Amber Denim","Chittagong Denim","Ha-Meem Textiles & Denim","Harmonic","Paramount","Unifill","Odessa Fashons","RGR Sweater","Smart Jacket","Starlight Sweaters","Tusuka","Universal Lingerie","Zaber and Zubair Spinning Mills"];
+const STL = ["NOT STARTED","IN PROGRESS","COMPLETE"], STN = ["Not started","In progress","Complete"], XPF = [0,4,10];
+const LEVELS = [[0,"Trainee Auditor"],[20,"Compliance Scout"],[40,"Sustainability Ranger"],[60,"CR Vanguard"],[80,"Hive Master"],[100,"Hive Legend"]];
+const MILES = [[25,"Quarter of the Hive is lit up."],[50,"Halfway across the Hive."],[75,"Three-quarters lit. The finish line is in sight."],[100,"Every cell is lit. The Hive is complete."]];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const slug = n => (n||"supplier").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "supplier";
+const sortV = l => l.slice().sort((a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:"base", numeric:true}));
+const catOf = k => CATS.find(c => c.key === k);
+const num = i => String(i + 1).padStart(2, "0");
+
+let V = [], A = {}, S = {}, mode = "cat", cat = CATS[0].key, vid = null, term = "";
+let dirty = false, saving = false, ver = 0, stamp = "", saveTimer, firstSync = true;
+
+function uniqueId(name){ let b = slug(name), id = b, n = 2; while (V.some(v => v.id === id)) id = b + "-" + n++; return id; }
+function fresh(){ const s = {}; V.forEach(v => { s[v.id] = {}; CATS.forEach(c => s[v.id][c.key] = 0); }); return s; }
+function defaults(){ V = []; NAMES.forEach(n => V.push({id:uniqueId(n), name:n, d:{}})); V = sortV(V); A = {}; CATS.forEach(c => A[c.key] = new Set(V.map(v => v.id))); S = fresh(); }
+function adopt(doc){
+  if (!doc || !Array.isArray(doc.vendors) || !doc.vendors.length) return false;
+  V = sortV(doc.vendors.map(v => typeof v === "string" ? {id:slug(v), name:v, d:{}} : {...v, d:v.d || {}}).filter(v => v && v.id && v.name));
+  if (Array.isArray(doc.categories) && doc.categories.length) CATS = doc.categories.map(c => typeof c === "string" ? (DEFAULT_CATS.find(d => d.key === c) || {key:c, label:c, icon:"📋"}) : {key:c.key, label:c.label || c.key, icon:c.icon || "📋"}).filter(c => c.key);
+  const ids = new Set(V.map(v => v.id)); A = {};
+  CATS.forEach(c => { const l = doc.assignments && Array.isArray(doc.assignments[c.key]) ? doc.assignments[c.key] : (doc.assignments ? [] : [...ids]); A[c.key] = new Set(l.filter(i => ids.has(i))); });
+  S = fresh(); V.forEach(v => CATS.forEach(c => { const r = doc.state && doc.state[v.id]; if (r && r[c.key]) S[v.id][c.key] = r[c.key]; }));
+  stamp = doc.savedAt || ""; return true;
+}
+function toDoc(){
+  const a = {}, st = {}; CATS.forEach(c => a[c.key] = [...A[c.key]]);
+  V.forEach(v => { const r = {}; CATS.forEach(c => { if ((S[v.id] || {})[c.key]) r[c.key] = S[v.id][c.key]; }); if (Object.keys(r).length) st[v.id] = r; });
+  return {savedAt:new Date().toISOString(), vendors:V.map(v => v.d && Object.keys(v.d).length ? v : {id:v.id, name:v.name}), categories:CATS, assignments:a, state:st};
+}
+const vById = id => V.find(v => v.id === id) || null;
+const assigned = k => V.filter(v => A[k].has(v.id));
+const cellsOf = id => CATS.filter(c => A[c.key].has(id));
+
+/* ---------- JSONBin sync ---------- */
+function setSync(kind, msg){
+  const el = $("sync"), t = {saved:"Synced", saving:"Saving…", loading:"Syncing…", offline:"Offline — saved locally", error:"Sync error" + (msg ? ": " + msg : "") + " — saved locally"};
+  el.className = "pill " + kind; el.textContent = t[kind];
+}
+async function failMsg(r){ if (r.status === 401 || r.status === 403) return "invalid key"; if (r.status === 404) return "bin not found"; if (r.status === 429) return "rate limit"; try { return (await r.json()).message || "HTTP " + r.status; } catch(e){ return "HTTP " + r.status; } }
+function cache(){ try { localStorage.setItem(CACHE, JSON.stringify(toDoc())); } catch(e){} }
+function save(){ cache(); dirty = true; ver++; setSync("saving"); clearTimeout(saveTimer); saveTimer = setTimeout(push, 800); }
+async function push(){
+  if (saving) { saveTimer = setTimeout(push, 500); return; }
+  saving = true; const v = ver, d = toDoc();
+  try {
+    const r = await fetch(API, {method:"PUT", headers:{...AUTH, "Content-Type":"application/json", "X-Bin-Versioning":"false"}, body:JSON.stringify(d)});
+    if (!r.ok) throw new Error(await failMsg(r));
+    stamp = d.savedAt; if (v === ver) { dirty = false; setSync("saved"); }
+  } catch(e){ setSync(navigator.onLine ? "error" : "offline", navigator.onLine ? e.message : ""); }
+  finally { saving = false; }
+}
+async function sync(manual){
+  if (dirty || saving) { if (manual) push(); return; }
+  setSync("loading");
+  try {
+    const r = await fetch(API + "/latest", {headers:{...AUTH, "X-Bin-Meta":"false"}});
+    if (!r.ok) throw new Error(await failMsg(r));
+    let d = await r.json(); if (d && d.record && !d.vendors) d = d.record;
+    if (d && Array.isArray(d.vendors) && d.vendors.length) {
+      if (d.savedAt !== stamp) { adopt(d); fixActive(); cache(); renderAll(); if (!firstSync) toast("🔄 Updated from the cloud"); }
+      setSync("saved");
+    } else { save(); }   // empty bin: seed it with the current roster
+    if (manual) toast("☁ Synced with JSONBin");
+  } catch(e){ setSync(navigator.onLine ? "error" : "offline", navigator.onLine ? e.message : ""); }
+  firstSync = false;
+}
+function fixActive(){ if (!vById(vid)) vid = V.length ? V[0].id : null; if (!catOf(cat)) cat = CATS[0].key; }
+
+/* ---------- Hive rendering ---------- */
+function perRow(){
+  const cs = getComputedStyle($("hive")), w = parseFloat(cs.getPropertyValue("--w")), g = parseFloat(cs.getPropertyValue("--gap"));
+  const avail = $("scroll").clientWidth - 16 - (w + g) / 2;
+  return Math.max(2, Math.floor((avail + g) / (w + g)));
+}
+function hexHtml(label, st, icon, v, c, dim){
+  const has = Object.values(vById(v).d || {}).some(Boolean);
+  return `<div class="hex s${st}${dim || ""}" role="button" tabindex="0" data-v="${esc(v)}" data-c="${c}" aria-label="${esc(label)}: ${STN[st]}">
+    <span class="ic">${icon}</span><span class="lb">${esc(label)}</span><span class="st">${STL[st]}</span>
+    <button type="button" class="hex-i${has ? " has" : ""}" aria-label="${has ? "View" : "Add"} supplier details" tabindex="0">i</button></div>`;
+}
+function renderHive(){
+  const hive = $("hive"), items = [];
+  if (mode === "cat") {
+    assigned(cat).forEach(v => {
+      const m = term && v.name.toLowerCase().includes(term);
+      items.push(hexHtml(v.name, S[v.id][cat], num(items.length), v.id, cat, term ? (m ? " match" : " dim") : ""));
+    });
+    $("vpTitle").textContent = catOf(cat).label; $("vpHint").textContent = items.length + " suppliers in view";
+    if (!items.length) { hive.innerHTML = '<div class="empty-h">No suppliers on this task yet.<br>Use <b>Manage suppliers</b> to add some.</div>'; return; }
+  } else {
+    const v = vById(vid);
+    if (!v) { hive.innerHTML = '<div class="empty-h">No supplier selected.</div>'; return; }
+    cellsOf(v.id).forEach(c => items.push(hexHtml(c.label, S[v.id][c.key], num(items.length), v.id, c.key)));
+    $("vpTitle").textContent = v.name; $("vpHint").textContent = items.length + " tasks in view";
+    if (!items.length) { hive.innerHTML = '<div class="empty-h">This supplier isn\'t on any task yet.</div>'; return; }
+  }
+  const n = perRow(); let html = "";
+  for (let i = 0; i < items.length; i += n) html += `<div class="row${(i / n) % 2 ? " sh" : ""}">${items.slice(i, i + n).join("")}</div>`;
+  hive.innerHTML = html;
+}
+function cycle(id, c){ S[id][c] = (S[id][c] + 1) % 3; if (S[id][c] === 2) toast(`✓ ${vById(id).name} · ${catOf(c).label} complete +10 XP`); save(); renderAll(); }
+
+/* ---------- Dashboard ---------- */
+function catPct(k){ const l = assigned(k); let n = 0; l.forEach(v => n += S[v.id][k] / 2); return l.length ? Math.round(n / l.length * 100) : 0; }
+function venPct(id){ const l = cellsOf(id); let n = 0; l.forEach(c => n += S[id][c.key] / 2); return l.length ? Math.round(n / l.length * 100) : 0; }
+let lastMile = -1;
+function renderDash(){
+  let xp = 0, done = 0, prog = 0, cells = 0;
+  CATS.forEach(c => assigned(c.key).forEach(v => { const s = S[v.id][c.key]; xp += XPF[s]; cells++; if (s === 2) done++; else if (s === 1) prog++; }));
+  const max = cells * 10, pct = max ? Math.round(xp / max * 100) : 0;
+  $("xp").textContent = xp.toLocaleString(); $("xpMax").textContent = `of ${max.toLocaleString()} XP`;
+  $("pctTxt").textContent = pct + "%"; $("meter").style.width = pct + "%"; $("ringP").textContent = pct + "%";
+  $("ringF").style.strokeDashoffset = (351.9 * (1 - pct / 100)).toFixed(1);
+  $("rank").textContent = LEVELS.filter(l => pct >= l[0]).pop()[1];
+  $("sV").textContent = V.length; $("sD").textContent = `${done} / ${cells}`; $("sP").textContent = prog;
+  $("cats").innerHTML = CATS.map(c => { const p = catPct(c.key); return `<li class="cat${mode === "cat" && c.key === cat ? " on" : ""}" data-k="${esc(c.key)}" tabindex="0"><span>${esc(c.icon)}</span><div style="flex:1;min-width:0"><b>${esc(c.label)}</b><div class="mm"><i style="width:${p}%"></i></div><small>${assigned(c.key).length} suppliers</small></div><em style="font-style:normal;font-size:12px;color:var(--dim)">${p}%</em></li>`; }).join("");
+  const rk = V.map(v => ({n:v.name, p:venPct(v.id)})).sort((a, b) => b.p - a.p);
+  const li = r => r.map((v, i) => `<li><span>${i + 1}. ${esc(v.n)}</span><b>${v.p}%</b></li>`).join("");
+  $("top").innerHTML = li(rk.slice(0, 5)); $("low").innerHTML = li(rk.slice(-5).reverse());
+  const mile = MILES.slice().reverse().find(m => pct >= m[0]);
+  if (!pct) $("say").innerHTML = `Welcome to the Hive. <b>${cells} cells</b> across ${CATS.length} tasks and ${V.length} suppliers are waiting — click a hex to log progress.`;
+  else if (mile && mile[0] !== lastMile) { lastMile = mile[0]; $("say").innerHTML = `<b>${mile[0]}% complete!</b> ${mile[1]}`; toast(`🏆 Milestone: ${mile[0]}% of the Hive`); }
+  else { const w = CATS.slice().sort((a, b) => catPct(a.key) - catPct(b.key))[0];
+    $("say").innerHTML = `<b>${pct}%</b> through the Hive. <b>${esc(w.label)}</b> needs the most attention at ${catPct(w.key)}%.`; }
+}
+function renderSel(){
+  const l = V.filter(v => !term || v.name.toLowerCase().includes(term));
+  $("venSel").innerHTML = l.map(v => `<option value="${esc(v.id)}">${esc(v.name)}</option>`).join("");
+  if (l.length && !l.some(v => v.id === vid)) vid = l[0].id; if (vid) $("venSel").value = vid;
+}
+function renderAll(){ fixActive(); renderSel(); renderHive(); renderDash(); if ($("tip").classList.contains("open")) refreshTip(); if ($("sm").open) renderSM(); }
+function setMode(m){ mode = m; $("vCat").classList.toggle("on", m === "cat"); $("vVen").classList.toggle("on", m === "ven");
+  $("cats").hidden = m !== "cat"; $("venSel").hidden = m !== "ven"; $("addSup").hidden = m !== "cat"; hideTip(true); renderAll(); }
+
+/* ---------- Hover card ---------- */
+const tip = $("tip"); let tipEl = null, showT, hideT, pinned = false;
+function tipHtml(v, c){
+  const d = v.d || {}, st = S[v.id][c], row = (k, h) => h ? `<dt>${k}</dt><dd>${h}</dd>` : "";
+  const late = d.audit && new Date(d.audit + "T23:59:59") < new Date() && st !== 2;
+  const rows = row("Contact", esc(d.contact)) + row("Email", d.email && `<a href="mailto:${esc(d.email)}">${esc(d.email)}</a>`)
+    + row("Phone", d.phone && `<a href="tel:${esc(d.phone)}">${esc(d.phone)}</a>`) + row("Location", esc(d.location))
+    + row("Deadline", d.audit && `<span class="${late ? "late" : ""}">${new Date(d.audit + "T00:00").toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"})}${late ? " · overdue" : ""}</span>`)
+    + row("Risk", d.risk && `<span class="risk ${esc(d.risk)}">${esc(d.risk)}</span>`) + row("Notes", esc(d.notes).replace(/\n/g, "<br>"));
+  return `<h3>${esc(v.name)}</h3><div class="sub">${catOf(c).icon} ${esc(catOf(c).label)}</div>
+    <div class="set" role="group" aria-label="Status">${STN.map((n, i) => `<button type="button" data-s="${i}" aria-pressed="${st === i}">${n}</button>`).join("")}</div>
+    ${rows ? `<dl>${rows}</dl>` : '<p class="empty">No details yet — add a contact, deadline or notes for this supplier.</p>'}
+    <button type="button" class="btn ${rows ? "" : "pri"}" data-edit style="width:100%">${rows ? "✎ Edit details" : "＋ Add details"}</button>
+    <button type="button" class="btn bad" data-rm style="width:100%;margin-top:6px">− Remove from this task</button>`;
+}
+function placeTip(){
+  if (!tipEl) return; const r = tipEl.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, W = innerWidth, H = innerHeight;
+  let x = r.right + 10, y = r.top + r.height / 2 - h / 2;
+  if (x + w > W - 8) x = r.left - w - 10;
+  if (x < 8) { x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), W - w - 8); y = r.bottom + 6; if (y + h > H - 8) y = Math.max(8, r.top - h - 6); }
+  tip.style.left = x + "px"; tip.style.top = Math.min(Math.max(8, y), H - h - 8) + "px";
+}
+function showTip(hex, pin){
+  clearTimeout(hideT); if (tipEl) tipEl.classList.remove("tipped");
+  tipEl = hex; hex.classList.add("tipped"); pinned = !!pin;
+  tip.innerHTML = tipHtml(vById(hex.dataset.v), hex.dataset.c); tip.classList.add("open"); placeTip();
+}
+function refreshTip(){
+  if (!tipEl) return; const h = $("hive").querySelector(`.hex[data-v="${CSS.escape(tipEl.dataset.v)}"][data-c="${tipEl.dataset.c}"]`);
+  if (h) { const p = pinned; showTip(h, p); } else hideTip(true);
+}
+function hideTip(now){
+  clearTimeout(showT); clearTimeout(hideT);
+  const go = () => { tip.classList.remove("open"); if (tipEl) tipEl.classList.remove("tipped"); tipEl = null; pinned = false; };
+  now ? go() : (hideT = setTimeout(() => { if (!pinned) go(); }, 280));
+}
+const hive = $("hive");
+hive.addEventListener("mouseover", e => { const h = e.target.closest(".hex"); if (!h || h === tipEl) { if (h) clearTimeout(hideT); return; }
+  clearTimeout(hideT); clearTimeout(showT); showT = setTimeout(() => showTip(h, false), 260); });
+hive.addEventListener("mouseout", e => { if (e.target.closest(".hex")) { clearTimeout(showT); hideTip(); } });
+hive.addEventListener("click", e => { const h = e.target.closest(".hex"); if (!h) return;
+  if (e.target.closest(".hex-i")) { e.stopPropagation(); showTip(h, true); } else { hideTip(true); cycle(h.dataset.v, h.dataset.c); } });
+hive.addEventListener("keydown", e => { const h = e.target.closest(".hex");
+  if (h && h === e.target && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); cycle(h.dataset.v, h.dataset.c); } });
+tip.addEventListener("mouseenter", () => clearTimeout(hideT));
+tip.addEventListener("mouseleave", () => hideTip());
+tip.addEventListener("click", e => {
+  const s = e.target.closest("[data-s]"); if (s && tipEl) { S[tipEl.dataset.v][tipEl.dataset.c] = +s.dataset.s; save(); renderAll(); return; }
+  if (e.target.closest("[data-edit]") && tipEl) openDetails(tipEl.dataset.v);
+  if (e.target.closest("[data-rm]") && tipEl) { const id = tipEl.dataset.v, k = tipEl.dataset.c, v = vById(id);
+    if (v && confirm(`Remove ${v.name} from “${catOf(k).label}”? Its status is kept if you add it back.`)) { A[k].delete(id); hideTip(true); save(); renderAll(); toast(`− Removed ${v.name} from this task`); } }
+});
+document.addEventListener("click", e => { if (pinned && !tip.contains(e.target)) hideTip(true); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") hideTip(true); });
+addEventListener("scroll", () => hideTip(true), true); addEventListener("resize", () => { hideTip(true); clearTimeout(renderAll.t); renderAll.t = setTimeout(renderHive, 150); });
+
+/* ---------- Details dialog ---------- */
+const dm = $("dm"), dForm = $("dForm"); let editId = null;
+function openDetails(id){
+  const v = vById(id); if (!v) return; editId = id; hideTip(true);
+  $("dTitle").textContent = v.name; const d = v.d || {};
+  ["contact","phone","email","location","audit","risk","notes"].forEach(k => dForm.elements[k].value = d[k] || "");
+  if ($("sm").open) $("sm").close(); dm.showModal();
+}
+dForm.addEventListener("submit", e => {
+  e.preventDefault(); const v = vById(editId); if (!v) return; const d = {};
+  ["contact","phone","email","location","audit","risk","notes"].forEach(k => { const x = dForm.elements[k].value.trim(); if (x) d[k] = x; });
+  v.d = d; dm.close(); save(); renderAll(); toast(`✎ Saved details for ${v.name}`);
+});
+document.querySelectorAll("dialog").forEach(d => { d.addEventListener("click", e => { if (e.target === d || e.target.closest("[data-close]")) d.close(); }); });
+
+/* ---------- Manage suppliers ---------- */
+const sm = $("sm");
+function renderSM(){
+  const body = $("smBody"), keep = body.querySelector("#nName") ? body.querySelector("#nName").value : "";
+  body.innerHTML = `<form id="nForm" class="sr"><input class="field" id="nName" style="margin:0" placeholder="New supplier name…" value="${esc(keep)}" required>
+      <div class="chips">${CATS.map(c => `<label class="chip" style="opacity:1;display:flex;gap:5px;cursor:pointer"><input type="checkbox" value="${c.key}" ${mode === "cat" && c.key === cat ? "checked" : ""}>${c.icon} ${esc(c.label.replace(/ \(.*\)/, ""))}</label>`).join("")}</div>
+      <button class="btn pri">Add supplier to selected tasks</button></form>
+    <ul class="sl">${V.map(v => `<li class="sr"><div class="top"><b>${esc(v.name)}</b><span style="display:flex;gap:6px">
+      <button class="btn mini" data-d="${esc(v.id)}">Details</button><button class="btn mini bad" data-r="${esc(v.id)}">Delete</button></span></div>
+      <div class="chips">${CATS.map(c => `<button class="chip" data-t="${esc(v.id)}|${c.key}" aria-pressed="${A[c.key].has(v.id)}" title="${esc(c.label)}">${c.icon}</button>`).join("")}</div></li>`).join("")}</ul>`;
+}
+function openSM(){ renderSM(); sm.showModal(); }
+sm.addEventListener("submit", e => {
+  if (e.target.id !== "nForm") return; e.preventDefault();
+  const name = $("nName").value.trim(), ks = [...e.target.querySelectorAll("input[type=checkbox]:checked")].map(i => i.value);
+  if (!name) return; if (!ks.length) return toast("⚠ Pick at least one task");
+  let v = V.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!v) { v = {id:uniqueId(name), name, d:{}}; V.push(v); V = sortV(V); S[v.id] = {}; CATS.forEach(c => S[v.id][c.key] = 0); }
+  ks.forEach(k => A[k].add(v.id)); $("nName").value = ""; fixActive(); save(); renderAll(); toast(`➕ ${v.name} added to ${ks.length} task${ks.length > 1 ? "s" : ""}`);
+});
+sm.addEventListener("click", e => {
+  const t = e.target.closest("[data-t]"), d = e.target.closest("[data-d]"), r = e.target.closest("[data-r]");
+  if (t) { const [id, k] = t.dataset.t.split("|"); A[k].has(id) ? A[k].delete(id) : A[k].add(id); save(); renderAll(); }
+  else if (d) openDetails(d.dataset.d);
+  else if (r) { const v = vById(r.dataset.r); if (!v || !confirm(`Delete ${v.name} and all its progress?`)) return;
+    V = V.filter(x => x.id !== v.id); delete S[v.id]; CATS.forEach(c => A[c.key].delete(v.id)); fixActive(); save(); renderAll(); toast(`✕ Deleted ${v.name}`); }
+});
+dm.addEventListener("close", () => { if (editId && !sm.open && document.activeElement === document.body) {} });
+
+/* ---------- Add / remove suppliers on a task ---------- */
+const sp = $("sp"); let spCat = null, spQ = "";
+function openSP(k){
+  spCat = k; spQ = ""; $("spTitle").textContent = "Suppliers · " + catOf(k).label;
+  $("spBody").innerHTML = `<form id="nsForm" class="sr"><input class="field" id="nsName" style="margin:0" placeholder="New supplier name…" required autocomplete="off"><button class="btn pri">Create and add to this task</button></form>
+    <input class="field" id="spSearch" type="search" style="margin:0" placeholder="Search suppliers…" aria-label="Search suppliers"><div id="spLists"></div>`;
+  renderSPLists(); sp.showModal();
+}
+function renderSPLists(){
+  const q = spQ.toLowerCase(), on = A[spCat], hit = v => !q || v.name.toLowerCase().includes(q);
+  const row = (v, a) => `<li class="sr"><div class="top"><b>${esc(v.name)}</b><button class="btn mini ${a === "rm" ? "bad" : "pri"}" data-${a}="${esc(v.id)}">${a === "rm" ? "Remove" : "Add"}</button></div></li>`;
+  const inL = V.filter(v => on.has(v.id) && hit(v)), outL = V.filter(v => !on.has(v.id) && hit(v));
+  $("spLists").innerHTML = `<div class="eyebrow" style="margin:8px 0 6px">On this task (${on.size})</div><ul class="sl">${inL.map(v => row(v, "rm")).join("") || '<li class="sr">None match.</li>'}</ul>
+    <div class="eyebrow" style="margin:12px 0 6px">Not on this task</div><ul class="sl">${outL.map(v => row(v, "add")).join("") || '<li class="sr">None match.</li>'}</ul>`;
+}
+sp.addEventListener("input", e => { if (e.target.id === "spSearch") { spQ = e.target.value.trim(); renderSPLists(); } });
+sp.addEventListener("submit", e => {
+  if (e.target.id !== "nsForm") return; e.preventDefault();
+  const name = $("nsName").value.trim(); if (!name) return;
+  let v = V.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (!v) { v = {id:uniqueId(name), name, d:{}}; V.push(v); V = sortV(V); S[v.id] = {}; CATS.forEach(c => S[v.id][c.key] = 0); }
+  A[spCat].add(v.id); $("nsName").value = ""; save(); renderAll(); renderSPLists(); toast(`➕ ${v.name} added to this task`);
+});
+sp.addEventListener("click", e => {
+  const a = e.target.closest("[data-add]"), r = e.target.closest("[data-rm]"); if (!a && !r) return;
+  const id = (a || r).dataset[a ? "add" : "rm"], v = vById(id); if (!v) return;
+  if (a) A[spCat].add(id); else A[spCat].delete(id);
+  save(); renderAll(); renderSPLists(); toast(a ? `➕ ${v.name} added` : `− ${v.name} removed from this task`);
+});
+$("addSup").onclick = () => openSP(cat);
+
+/* ---------- Add / manage tasks ---------- */
+const tm = $("tm");
+function renderTM(){
+  $("tmBody").innerHTML = `<form id="tForm" class="sr"><div class="two"><input class="field" id="tName" style="margin:0" placeholder="New task name…" required autocomplete="off"><input class="field" id="tIcon" style="margin:0" placeholder="Emoji (optional)" maxlength="4"></div>
+    <select class="field" id="tAssign" style="margin:0"><option value="all">Start with all suppliers</option><option value="none">Start with no suppliers</option></select>
+    <button class="btn pri">Add task</button></form>
+    <ul class="sl">${CATS.map(c => `<li class="sr"><div class="top"><b>${esc(c.icon)} ${esc(c.label)}</b><span style="display:flex;gap:8px;align-items:center"><small>${assigned(c.key).length} suppliers</small><button class="btn mini bad" data-del="${esc(c.key)}">Delete</button></span></div></li>`).join("")}</ul>`;
+}
+tm.addEventListener("submit", e => {
+  if (e.target.id !== "tForm") return; e.preventDefault();
+  const name = $("tName").value.trim(); if (!name) return;
+  if (CATS.some(c => c.label.toLowerCase() === name.toLowerCase())) return toast("⚠ That task already exists");
+  const base = slug(name); let key = base, n = 2; while (CATS.some(c => c.key === key)) key = base + "-" + n++;
+  CATS.push({key, label:name, icon:$("tIcon").value.trim() || "📋"});
+  A[key] = new Set($("tAssign").value === "all" ? V.map(v => v.id) : []);
+  V.forEach(v => { S[v.id][key] = 0; }); cat = key; mode === "cat" || setMode("cat");
+  save(); renderAll(); renderTM(); toast(`➕ Task “${name}” added`);
+});
+tm.addEventListener("click", e => {
+  const b = e.target.closest("[data-del]"); if (!b) return; const c = catOf(b.dataset.del); if (!c) return;
+  if (CATS.length < 2) return toast("⚠ Keep at least one task");
+  if (!confirm(`Delete task “${c.label}” and its progress for every supplier?`)) return;
+  CATS = CATS.filter(x => x.key !== c.key); delete A[c.key]; V.forEach(v => { delete S[v.id][c.key]; });
+  save(); renderAll(); renderTM(); toast(`✕ Task “${c.label}” deleted`);
+});
+$("tasks").onclick = () => { renderTM(); tm.showModal(); };
+
+/* ---------- Nav, export, import, reset ---------- */
+$("cats").addEventListener("click", e => { const li = e.target.closest(".cat"); if (li) { cat = li.dataset.k; setMode("cat"); } });
+$("cats").addEventListener("keydown", e => { const li = e.target.closest(".cat"); if (li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); cat = li.dataset.k; setMode("cat"); } });
+$("vCat").onclick = () => setMode("cat"); $("vVen").onclick = () => setMode("ven");
+$("venSel").onchange = e => { vid = e.target.value; renderAll(); };
+$("search").oninput = e => { term = e.target.value.trim().toLowerCase(); renderAll(); };
+$("manage").onclick = openSM; $("sync").onclick = () => sync(true);
+$("exp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(toDoc(), null, 2)], {type:"application/json"}));
+  a.download = "cr-hive-progress.json"; a.click(); URL.revokeObjectURL(a.href); toast("💾 Progress file saved"); };
+$("imp").onclick = () => $("impFile").click();
+$("impFile").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { try { if (adopt(JSON.parse(r.result))) { fixActive(); save(); renderAll(); toast("📂 Progress loaded"); } else toast("⚠ Not a valid tracker file"); } catch(x){ toast("⚠ Couldn't read that file"); } };
+  r.readAsText(f); e.target.value = ""; };
+$("reset").onclick = () => { if (!confirm("Reset all progress? Supplier details are kept. This can't be undone unless you saved a file first.")) return;
+  S = fresh(); lastMile = -1; save(); renderAll(); toast("⟲ Hive reset"); };
+
+let toastT; function toast(m){ const t = $("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2400); }
+
+/* ---------- Boot ---------- */
+(function(){ let doc = null; try { doc = JSON.parse(localStorage.getItem(CACHE)); } catch(e){}
+  if (!adopt(doc)) defaults(); fixActive(); })();
+$("cats").hidden = false; renderAll();
+sync(false);
+setInterval(() => { if (!document.hidden) sync(false); }, POLL_MS);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(false); });
+addEventListener("online", () => sync(false));
+})();
+</script>
+</body>
+</html>
